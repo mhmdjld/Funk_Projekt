@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Station Map</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 100%;
+            width: 100%;
+            border-radius: 0.5rem;
+        }
+        .temperature-cell, .column-spring, .column-summer, .column-autumn, .column-winter {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .temperature-min {
+            color: blue;
+        }
+        .temperature-max {
+            color: red;
+        }
+        .dotted-line {
+            border-bottom: 1px dotted black;
+            display: block;
+            margin: 4px auto;
+            width: 50%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Left Half -->
+        <div class="w-1/2 p-4 flex flex-col space-y-4">
+            <!-- Input Fields -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold mb-4">Eingabeparameter</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="latitude" class="block text-sm font-medium">Breite</label>
+                        <input id="latitude" type="text" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label for="longitude" class="block text-sm font-medium">Länge</label>
+                        <input id="longitude" type="text" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label for="start-year" class="block text-sm font-medium">Startjahr</label>
+                        <input id="start-year" type="number" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label for="end-year" class="block text-sm font-medium">Endjahr</label>
+                        <input id="end-year" type="number" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label for="station-count" class="block text-sm font-medium">Anzahl der Wetterstationen</label>
+                        <input id="station-count" type="number" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label for="radius" class="block text-sm font-medium">Umkreis (km)</label>
+                        <div class="flex items-center space-x-2">
+                            <input id="radius-slider" type="range" min="1" max="100" value="10" class="flex-grow">
+                            <input id="radius-input" type="number" min="1" max="100" value="10" class="w-16 border rounded-lg p-2">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-center mt-4">
+                    <button class="px-6 py-2 bg-blue-500 text-white rounded-lg">Suchen</button>
+                </div>
+            </div>
+            <!-- Map -->
+            <div class="flex-grow rounded-lg shadow-md">
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <!-- Right Half -->
+        <div class="w-1/2 p-4 flex flex-col space-y-4">
+            <!-- Weather Stations List -->
+            <div class="bg-white p-4 rounded-lg shadow-md flex flex-col space-y-2">
+                <h2 class="text-lg font-semibold">Wetterstationen</h2>
+                <ul id="station-list" class="space-y-1">
+                    <li class="p-2 border rounded-lg">Station 1</li>
+                    <li class="p-2 border rounded-lg">Station 2</li>
+                    <li class="p-2 border rounded-lg">Station 3</li>
+                    <li class="p-2 border rounded-lg">Station 4</li>
+                    <li class="p-2 border rounded-lg">Station 5</li>
+                </ul>
+                <div class="flex justify-center mt-2">
+                    <button class="px-4 py-2 bg-blue-500 text-white rounded-lg">Weiter</button>
+                </div>
+            </div>
+            <!-- Data Table -->
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold mb-4">Datenfilter und Tabelle</h2>
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('temperature', this)">
+                        <span>Min & Max</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('spring', this)">
+                        <span>Frühling</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('summer', this)">
+                        <span>Sommer</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('autumn', this)">
+                        <span>Herbst</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('winter', this)">
+                        <span>Winter</span>
+                    </label>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full border">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="border p-2">Jahr</th>
+                                <th class="border p-2 column-temperature hidden">Temperatur</th>
+                                <th class="border p-2 column-spring hidden">Frühling</th>
+                                <th class="border p-2 column-summer hidden">Sommer</th>
+                                <th class="border p-2 column-autumn hidden">Herbst</th>
+                                <th class="border p-2 column-winter hidden">Winter</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="border p-2">2022</td>
+                                <td class="border p-2 column-temperature hidden temperature-cell">
+                                    <span class="temperature-max" style="color: red;">25°C</span>
+                                    <span class="dotted-line"></span>
+                                    <span class="temperature-min" style="color: blue;">10°C</span>
+                                </td>
+                                <td class="border p-2 column-spring hidden temperature-cell">15°C</td>
+                                <td class="border p-2 column-summer hidden temperature-cell">30°C</td>
+                                <td class="border p-2 column-autumn hidden temperature-cell">20°C</td>
+                                <td class="border p-2 column-winter hidden temperature-cell">5°C</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize the map using Leaflet
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        // Add OpenStreetMap tiles for a modern and clean map look
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add a marker for the user's location
+        var marker = L.marker([51.505, -0.09]).addTo(map);
+        marker.bindPopup("Ihr Standort").openPopup();
+
+        // Synchronize the range slider and number input
+        const radiusSlider = document.getElementById('radius-slider');
+        const radiusInput = document.getElementById('radius-input');
+
+        radiusSlider.addEventListener('input', () => {
+            radiusInput.value = radiusSlider.value;
+        });
+
+        radiusInput.addEventListener('input', () => {
+            if (radiusInput.value >= radiusSlider.min && radiusInput.value <= radiusSlider.max) {
+                radiusSlider.value = radiusInput.value;
+            }
+        });
+
+        // Toggle table columns based on checkbox state
+        function toggleColumn(columnClass, checkbox) {
+            const elements = document.querySelectorAll(`.column-${columnClass}`);
+            elements.forEach(el => {
+                el.classList.toggle('hidden', !checkbox.checked);
+            });
+        }
+    </script>
+</body>
+</html>
