@@ -100,8 +100,12 @@
                 <h2 class="text-lg font-semibold mb-4">Datenfilter und Tabelle</h2>
                 <div class="grid grid-cols-3 gap-4 mb-4">
                     <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('temperature', this)">
-                        <span>Min & Max</span>
+                        <input type="checkbox" class="rounded" onchange="toggleTemperature('min', this)">
+                        <span>Min</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" onchange="toggleTemperature('max', this)">
+                        <span>Max</span>
                     </label>
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" class="rounded" onchange="toggleColumn('spring', this)">
@@ -125,7 +129,7 @@
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="border p-2">Jahr</th>
-                                <th class="border p-2 column-temperature hidden">Temperatur</th>
+                                <th class="border p-2 column-temperature">Temperatur</th>
                                 <th class="border p-2 column-spring hidden">Frühling</th>
                                 <th class="border p-2 column-summer hidden">Sommer</th>
                                 <th class="border p-2 column-autumn hidden">Herbst</th>
@@ -135,10 +139,10 @@
                         <tbody>
                             <tr>
                                 <td class="border p-2">2022</td>
-                                <td class="border p-2 column-temperature hidden temperature-cell">
-                                    <span class="temperature-max" style="color: red;">25°C</span>
-                                    <span class="dotted-line"></span>
-                                    <span class="temperature-min" style="color: blue;">10°C</span>
+                                <td class="border p-2 column-temperature temperature-cell">
+                                    <span class="temperature-max hidden" style="color: red;">25°C</span>
+                                    <span class="dotted-line hidden"></span>
+                                    <span class="temperature-min hidden" style="color: blue;">10°C</span>
                                 </td>
                                 <td class="border p-2 column-spring hidden temperature-cell">15°C</td>
                                 <td class="border p-2 column-summer hidden temperature-cell">30°C</td>
@@ -162,10 +166,6 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Add a marker for the user's location
-        var marker = L.marker([51.505, -0.09]).addTo(map);
-        marker.bindPopup("Ihr Standort").openPopup();
-
         // Synchronize the range slider and number input
         const radiusSlider = document.getElementById('radius-slider');
         const radiusInput = document.getElementById('radius-input');
@@ -180,12 +180,30 @@
             }
         });
 
-        // Toggle table columns based on checkbox state
+        // Toggle Min and Max temperatures
+        function toggleTemperature(type, checkbox) {
+            const minElements = document.querySelectorAll('.temperature-min');
+            const maxElements = document.querySelectorAll('.temperature-max');
+            const dottedLines = document.querySelectorAll('.dotted-line');
+
+            if (type === 'min') {
+                minElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
+            } else if (type === 'max') {
+                maxElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
+            }
+
+            // Show or hide dotted line based on both checkboxes
+            dottedLines.forEach(line => {
+                const minVisible = !line.previousElementSibling.classList.contains('hidden');
+                const maxVisible = !line.nextElementSibling.classList.contains('hidden');
+                line.classList.toggle('hidden', !(minVisible && maxVisible));
+            });
+        }
+
+        // Toggle columns for other data (spring, summer, etc.)
         function toggleColumn(columnClass, checkbox) {
             const elements = document.querySelectorAll(`.column-${columnClass}`);
-            elements.forEach(el => {
-                el.classList.toggle('hidden', !checkbox.checked);
-            });
+            elements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
         }
     </script>
 </body>
