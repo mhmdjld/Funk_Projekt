@@ -31,6 +31,13 @@
             margin: 4px auto;
             width: 50%;
         }
+        /* Neu: Verallgemeinerte Klassen, damit sie in allen Spalten funktionieren */
+        .data-min {
+            color: blue;
+        }
+        .data-max {
+            color: red;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -98,27 +105,39 @@
             <!-- Data Table -->
             <div class="bg-white p-4 rounded-lg shadow-md">
                 <h2 class="text-lg font-semibold mb-4">Datenfilter und Tabelle</h2>
-                <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="grid grid-cols-4 gap-4 mb-4">
+                    <!-- Checkbox für Min -->
                     <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" onchange="toggleTemperature('min', this)">
+                        <input type="checkbox" class="rounded" onchange="toggleMinMax('min', this)">
                         <span>Min</span>
                     </label>
+                    <!-- Checkbox für Max -->
                     <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" onchange="toggleTemperature('max', this)">
+                        <input type="checkbox" class="rounded" onchange="toggleMinMax('max', this)">
                         <span>Max</span>
                     </label>
+                    <!-- Checkbox für Temperatur -->
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('temperature', this)">
+                        <span>Temperatur</span>
+                    </label>
+                    <!-- Checkbox Frühling -->
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" class="rounded" onchange="toggleColumn('spring', this)">
                         <span>Frühling</span>
                     </label>
+
+                    <!-- Checkbox Sommer -->
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" class="rounded" onchange="toggleColumn('summer', this)">
                         <span>Sommer</span>
                     </label>
+                    <!-- Checkbox Herbst -->
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" class="rounded" onchange="toggleColumn('autumn', this)">
                         <span>Herbst</span>
                     </label>
+                    <!-- Checkbox Winter -->
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" class="rounded" onchange="toggleColumn('winter', this)">
                         <span>Winter</span>
@@ -129,7 +148,8 @@
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="border p-2">Jahr</th>
-                                <th class="border p-2 column-temperature">Temperatur</th>
+                                <!-- Temperatur-Spalte ist standardmäßig ausgeblendet -->
+                                <th class="border p-2 column-temperature hidden">Temperatur</th>
                                 <th class="border p-2 column-spring hidden">Frühling</th>
                                 <th class="border p-2 column-summer hidden">Sommer</th>
                                 <th class="border p-2 column-autumn hidden">Herbst</th>
@@ -139,16 +159,38 @@
                         <tbody>
                             <tr>
                                 <td class="border p-2">2022</td>
-                                <td class="border p-2 column-temperature temperature-cell">
-                                    <span class="temperature-max hidden" style="color: red;">25°C</span>
+                                <!-- Temperaturzelle (hidden by default) -->
+                                <td class="border p-2 column-temperature hidden temperature-cell">
+                                    <span class="data-max hidden" style="color: red;">25°C</span>
                                     <span class="dotted-line hidden"></span>
-                                    <span class="temperature-min hidden" style="color: blue;">10°C</span>
+                                    <span class="data-min hidden" style="color: blue;">10°C</span>
                                 </td>
-                                <td class="border p-2 column-spring hidden temperature-cell">15°C</td>
-                                <td class="border p-2 column-summer hidden temperature-cell">30°C</td>
-                                <td class="border p-2 column-autumn hidden temperature-cell">20°C</td>
-                                <td class="border p-2 column-winter hidden temperature-cell">5°C</td>
+                                <!-- Frühling -->
+                                <td class="border p-2 column-spring hidden temperature-cell">
+                                    <span class="data-max hidden" style="color: red;">20°C</span>
+                                    <span class="dotted-line hidden"></span>
+                                    <span class="data-min hidden" style="color: blue;">5°C</span>
+                                </td>
+                                <!-- Sommer -->
+                                <td class="border p-2 column-summer hidden temperature-cell">
+                                    <span class="data-max hidden" style="color: red;">30°C</span>
+                                    <span class="dotted-line hidden"></span>
+                                    <span class="data-min hidden" style="color: blue;">15°C</span>
+                                </td>
+                                <!-- Herbst -->
+                                <td class="border p-2 column-autumn hidden temperature-cell">
+                                    <span class="data-max hidden" style="color: red;">22°C</span>
+                                    <span class="dotted-line hidden"></span>
+                                    <span class="data-min hidden" style="color: blue;">8°C</span>
+                                </td>
+                                <!-- Winter -->
+                                <td class="border p-2 column-winter hidden temperature-cell">
+                                    <span class="data-max hidden" style="color: red;">10°C</span>
+                                    <span class="dotted-line hidden"></span>
+                                    <span class="data-min hidden" style="color: blue;">-2°C</span>
+                                </td>
                             </tr>
+                            <!-- Weitere Zeilen nach Bedarf -->
                         </tbody>
                     </table>
                 </div>
@@ -160,7 +202,7 @@
         // Initialize the map using Leaflet
         var map = L.map('map').setView([51.505, -0.09], 13);
 
-        // Add OpenStreetMap tiles for a modern and clean map look
+        // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
@@ -180,27 +222,33 @@
             }
         });
 
-        // Toggle Min and Max temperatures
-        function toggleTemperature(type, checkbox) {
-            const minElements = document.querySelectorAll('.temperature-min');
-            const maxElements = document.querySelectorAll('.temperature-max');
+        // Toggle Min und Max für ALLE Spalten (Temperatur, Frühling, etc.)
+        function toggleMinMax(type, checkbox) {
+            const minElements = document.querySelectorAll('.data-min');
+            const maxElements = document.querySelectorAll('.data-max');
             const dottedLines = document.querySelectorAll('.dotted-line');
 
             if (type === 'min') {
+                // Min-Spans ein/ausblenden
                 minElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
             } else if (type === 'max') {
+                // Max-Spans ein/ausblenden
                 maxElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
             }
 
-            // Show or hide dotted line based on both checkboxes
+            // Dotted line nur zeigen, wenn in derselben Zelle min UND max sichtbar sind
             dottedLines.forEach(line => {
-                const minVisible = !line.previousElementSibling.classList.contains('hidden');
-                const maxVisible = !line.nextElementSibling.classList.contains('hidden');
+                const parentCell = line.closest('td');
+                if (!parentCell) return;
+
+                const minVisible = parentCell.querySelector('.data-min:not(.hidden)');
+                const maxVisible = parentCell.querySelector('.data-max:not(.hidden)');
+
                 line.classList.toggle('hidden', !(minVisible && maxVisible));
             });
         }
 
-        // Toggle columns for other data (spring, summer, etc.)
+        // Ganze Spalten (temperature, spring, summer, autumn, winter) ein/ausblenden
         function toggleColumn(columnClass, checkbox) {
             const elements = document.querySelectorAll(`.column-${columnClass}`);
             elements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
