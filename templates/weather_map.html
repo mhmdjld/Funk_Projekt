@@ -80,6 +80,7 @@
                     <button class="px-6 py-2 bg-blue-500 text-white rounded-lg">Suchen</button>
                 </div>
             </div>
+
             <!-- Map -->
             <div class="flex-grow rounded-lg shadow-md">
                 <div id="map"></div>
@@ -102,47 +103,60 @@
                     <button class="px-4 py-2 bg-blue-500 text-white rounded-lg">Weiter</button>
                 </div>
             </div>
+
             <!-- Data Table -->
             <div class="bg-white p-4 rounded-lg shadow-md">
                 <h2 class="text-lg font-semibold mb-4">Datenfilter und Tabelle</h2>
-                <div class="grid grid-cols-4 gap-4 mb-4">
-                    <!-- Checkbox für Min -->
-                    <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" onchange="toggleMinMax('min', this)">
-                        <span>Min</span>
-                    </label>
-                    <!-- Checkbox für Max -->
-                    <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" onchange="toggleMinMax('max', this)">
-                        <span>Max</span>
-                    </label>
-                    <!-- Checkbox für Temperatur -->
-                    <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('temperature', this)">
-                        <span>Temperatur</span>
-                    </label>
-                    <!-- Checkbox Frühling -->
-                    <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('spring', this)">
-                        <span>Frühling</span>
-                    </label>
 
-                    <!-- Checkbox Sommer -->
+                <!-- Neue Anordnung der Checkboxen -->
+                <div class="grid grid-cols-4 grid-rows-2 gap-4 mb-4">
+                    <!-- Spalte 1 (oben/unten) -->
                     <label class="flex items-center space-x-2">
+                        <!-- Maximalwerte -->
+                        <input type="checkbox" class="rounded" onchange="toggleMinMax('max', this)">
+                        <span>Maximalwerte</span>
+                    </label>
+                    <!-- Spalte 2 (oben) -->
+                    <label class="flex items-center space-x-2">
+                        <!-- Jahr (steuert die 'temperature'-Spalte) -->
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('temperature', this)">
+                        <span>Jahr</span>
+                    </label>
+                    <!-- Spalte 3 (oben) -->
+                    <label class="flex items-center space-x-2">
+                        <!-- Sommer -->
                         <input type="checkbox" class="rounded" onchange="toggleColumn('summer', this)">
                         <span>Sommer</span>
                     </label>
-                    <!-- Checkbox Herbst -->
+                    <!-- Spalte 4 (oben) -->
                     <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('autumn', this)">
-                        <span>Herbst</span>
-                    </label>
-                    <!-- Checkbox Winter -->
-                    <label class="flex items-center space-x-2">
+                        <!-- Winter -->
                         <input type="checkbox" class="rounded" onchange="toggleColumn('winter', this)">
                         <span>Winter</span>
                     </label>
+
+                    <!-- Spalte 1 (unten) -->
+                    <label class="flex items-center space-x-2">
+                        <!-- Minimalwerte -->
+                        <input type="checkbox" class="rounded" onchange="toggleMinMax('min', this)">
+                        <span>Minimalwerte</span>
+                    </label>
+                    <!-- Spalte 2 (unten) bleibt leer, falls du nichts platzieren möchtest -->
+                    <div></div>
+                    <!-- Spalte 3 (unten) -->
+                    <label class="flex items-center space-x-2">
+                        <!-- Herbst -->
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('autumn', this)">
+                        <span>Herbst</span>
+                    </label>
+                    <!-- Spalte 4 (unten) -->
+                    <label class="flex items-center space-x-2">
+                        <!-- Frühling -->
+                        <input type="checkbox" class="rounded" onchange="toggleColumn('spring', this)">
+                        <span>Frühling</span>
+                    </label>
                 </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full border">
                         <thead class="bg-gray-100">
