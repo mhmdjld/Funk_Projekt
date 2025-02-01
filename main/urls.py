@@ -1,8 +1,8 @@
-from django.contrib import admin
 from django.urls import path
-from .views import weather_map_view
+from . import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('weather-map/', weather_map_view, name='weather_map'),
+    path("", views.index, name="index"),
+    path("api/search_stations/", views.search_stations, name="search_stations"),
+    path("api/get_station_data/", views.get_station_data, name="get_station_data"),
 ]

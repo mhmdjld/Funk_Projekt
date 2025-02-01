@@ -1,283 +1,457 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Station Map</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <style>
-        /* Grundlegende Layout-Einstellungen für die Karte */
-        #map {
-            height: 100%;
-            width: 100%;
-            border-radius: 0.5rem;
-        }
-
-        /* Zentrierung und Ausrichtung für Temperatur- und Jahreszeiten-Spalten */
-        .temperature-cell, .column-spring, .column-summer, .column-autumn, .column-winter {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Farben für Minimal- und Maximalwerte */
-        .temperature-min {
-            color: blue;
-        }
-        .temperature-max {
-            color: red;
-        }
-
-        /* Dotted-Line, um Min/Max-Werte zu trennen */
-        .dotted-line {
-            border-bottom: 1px dotted black;
-            display: block;
-            margin: 4px auto;
-            width: 50%;
-        }
-
-        /* Allgemeine Klassen für Min- und Max-Werte (gelten in allen Spalten) */
-        .data-min {
-            color: blue;
-        }
-        .data-max {
-            color: red;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Station Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    /* Layout für die Karte */
+    #map {
+      height: 100%;
+      width: 100%;
+      border-radius: 0.5rem;
+    }
+    /* Zentrierung der Zelleninhalte */
+    .temperature-cell,
+    .column-spring, .column-summer, .column-autumn, .column-winter, .column-annual, .column-year {
+      text-align: center;
+      vertical-align: middle;
+    }
+    /* Container in Zellen */
+    .cell-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    .temperature-min { color: blue; }
+    .temperature-max { color: red; }
+    .dotted-line {
+      border-bottom: 1px dotted black;
+      width: 50%;
+      margin: 4px 0;
+    }
+    .data-min { color: blue; }
+    .data-max { color: red; }
+    /* Elemente ausblenden */
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
 <body class="bg-gray-100">
-    <div class="flex h-screen">
-        <!-- Linke Hälfte -->
-        <div class="w-1/2 p-4 flex flex-col space-y-4">
-            <!-- Eingabefelder -->
-            <div class="bg-white p-4 rounded-lg shadow-md">
-                <h2 class="text-lg font-semibold mb-4">Eingabeparameter</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="latitude" class="block text-sm font-medium">Breite</label>
-                        <input id="latitude" type="text" class="w-full border rounded-lg p-2">
-                    </div>
-                    <div>
-                        <label for="longitude" class="block text-sm font-medium">Länge</label>
-                        <input id="longitude" type="text" class="w-full border rounded-lg p-2">
-                    </div>
-                    <div>
-                        <label for="start-year" class="block text-sm font-medium">Startjahr</label>
-                        <input id="start-year" type="number" class="w-full border rounded-lg p-2">
-                    </div>
-                    <div>
-                        <label for="end-year" class="block text-sm font-medium">Endjahr</label>
-                        <input id="end-year" type="number" class="w-full border rounded-lg p-2">
-                    </div>
-                    <div>
-                        <label for="station-count" class="block text-sm font-medium">Anzahl der Wetterstationen</label>
-                        <input id="station-count" type="number" class="w-full border rounded-lg p-2">
-                    </div>
-                    <div>
-                        <label for="radius" class="block text-sm font-medium">Umkreis (km)</label>
-                        <div class="flex items-center space-x-2">
-                            <input id="radius-slider" type="range" min="1" max="100" value="10" class="flex-grow">
-                            <input id="radius-input" type="number" min="1" max="100" value="10" class="w-16 border rounded-lg p-2">
-                        </div>
-                    </div>
-                </div>
-                <div class="flex justify-center mt-4">
-                    <button class="px-6 py-2 bg-blue-500 text-white rounded-lg">Suchen</button>
-                </div>
+  <div class="flex h-screen">
+    <!-- Linke Hälfte: Eingabefelder und Karte -->
+    <div class="w-1/2 p-4 flex flex-col space-y-4">
+      <div class="bg-white p-4 rounded-lg shadow-md">
+        <h2 class="text-lg font-semibold mb-4">Eingabeparameter</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="latitude" class="block text-sm font-medium">Breite</label>
+            <input id="latitude" type="text" class="w-full border rounded-lg p-2">
+          </div>
+          <div>
+            <label for="longitude" class="block text-sm font-medium">Länge</label>
+            <input id="longitude" type="text" class="w-full border rounded-lg p-2">
+          </div>
+          <div>
+            <label for="start-year" class="block text-sm font-medium">Startjahr</label>
+            <input id="start-year" type="number" class="w-full border rounded-lg p-2">
+          </div>
+          <div>
+            <label for="end-year" class="block text-sm font-medium">Endjahr</label>
+            <input id="end-year" type="number" class="w-full border rounded-lg p-2">
+          </div>
+          <div>
+            <label for="station-count" class="block text-sm font-medium">Anzahl der Wetterstationen</label>
+            <input id="station-count" type="number" placeholder="z.B. 20" class="w-full border rounded-lg p-2">
+          </div>
+          <div>
+            <label for="radius" class="block text-sm font-medium">Umkreis (km)</label>
+            <div class="flex items-center space-x-2">
+              <input id="radius-slider" type="range" min="1" max="100" value="10" class="flex-grow">
+              <input id="radius-input" type="number" min="1" max="100" value="10" class="w-16 border rounded-lg p-2">
             </div>
-
-            <!-- Kartenbereich -->
-            <div class="flex-grow rounded-lg shadow-md">
-                <div id="map"></div>
-            </div>
+          </div>
         </div>
-
-        <!-- Rechte Hälfte -->
-        <div class="w-1/2 p-4 flex flex-col space-y-4">
-            <!-- Liste der Wetterstationen -->
-            <div class="bg-white p-4 rounded-lg shadow-md flex flex-col space-y-2">
-                <h2 class="text-lg font-semibold">Wetterstationen</h2>
-                <ul id="station-list" class="space-y-1">
-                    <li class="p-2 border rounded-lg">Station 1</li>
-                    <li class="p-2 border rounded-lg">Station 2</li>
-                    <li class="p-2 border rounded-lg">Station 3</li>
-                    <li class="p-2 border rounded-lg">Station 4</li>
-                    <li class="p-2 border rounded-lg">Station 5</li>
-                </ul>
-                <div class="flex justify-center mt-2">
-                    <button class="px-4 py-2 bg-blue-500 text-white rounded-lg">Weiter</button>
-                </div>
-            </div>
-
-            <!-- Daten-Tabelle -->
-            <div class="bg-white p-4 rounded-lg shadow-md">
-                <h2 class="text-lg font-semibold mb-4">Datenfilter und Tabelle</h2>
-
-                <!-- Checkbox-Anordnung -->
-                <div class="grid grid-cols-4 grid-rows-2 gap-4 mb-4">
-                    <!-- Spalte 1 (oben/unten) -->
-                    <label class="flex items-center space-x-2">
-                        <!-- Maximalwerte -->
-                        <input type="checkbox" class="rounded" onchange="toggleMinMax('max', this)">
-                        <span>Maximalwerte</span>
-                    </label>
-                    <!-- Spalte 2 (oben) -->
-                    <label class="flex items-center space-x-2">
-                        <!-- Jahr (steuert die 'column-temperature') -->
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('temperature', this)">
-                        <span>Jahr</span>
-                    </label>
-                    <!-- Spalte 3 (oben) -->
-                    <label class="flex items-center space-x-2">
-                        <!-- Sommer -->
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('summer', this)">
-                        <span>Sommer</span>
-                    </label>
-                    <!-- Spalte 4 (oben) -->
-                    <label class="flex items-center space-x-2">
-                        <!-- Winter -->
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('winter', this)">
-                        <span>Winter</span>
-                    </label>
-
-                    <!-- Spalte 1 (unten) -->
-                    <label class="flex items-center space-x-2">
-                        <!-- Minimalwerte -->
-                        <input type="checkbox" class="rounded" onchange="toggleMinMax('min', this)">
-                        <span>Minimalwerte</span>
-                    </label>
-                    <!-- Spalte 2 (unten) -->
-                    <div></div>
-                    <!-- Spalte 3 (unten) -->
-                    <label class="flex items-center space-x-2">
-                        <!-- Herbst -->
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('autumn', this)">
-                        <span>Herbst</span>
-                    </label>
-                    <!-- Spalte 4 (unten) -->
-                    <label class="flex items-center space-x-2">
-                        <!-- Frühling -->
-                        <input type="checkbox" class="rounded" onchange="toggleColumn('spring', this)">
-                        <span>Frühling</span>
-                    </label>
-                </div>
-
-                <!-- Tabelle mit Daten -->
-                <div class="overflow-x-auto">
-                    <table class="w-full border">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <!-- Erste Spalte: kein Titel -->
-                                <th class="border p-2"></th>
-                                <!-- Zweite Spalte: Überschrift "Jahr", wird per Checkbox ein-/ausgeblendet -->
-                                <th class="border p-2 column-temperature hidden">Jahr</th>
-                                <th class="border p-2 column-spring hidden">Frühling</th>
-                                <th class="border p-2 column-summer hidden">Sommer</th>
-                                <th class="border p-2 column-autumn hidden">Herbst</th>
-                                <th class="border p-2 column-winter hidden">Winter</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <!-- Erste Spalte: zeigt z.B. das reale Jahr -->
-                                <td class="border p-2">2022</td>
-                                <!-- Zweite Spalte: beinhaltet Min/Max für diese "Jahr"-Spalte -->
-                                <td class="border p-2 column-temperature hidden temperature-cell">
-                                    <span class="data-max hidden" style="color: red;">25°C</span>
-                                    <span class="dotted-line hidden"></span>
-                                    <span class="data-min hidden" style="color: blue;">10°C</span>
-                                </td>
-                                <!-- Frühling -->
-                                <td class="border p-2 column-spring hidden temperature-cell">
-                                    <span class="data-max hidden" style="color: red;">20°C</span>
-                                    <span class="dotted-line hidden"></span>
-                                    <span class="data-min hidden" style="color: blue;">5°C</span>
-                                </td>
-                                <!-- Sommer -->
-                                <td class="border p-2 column-summer hidden temperature-cell">
-                                    <span class="data-max hidden" style="color: red;">30°C</span>
-                                    <span class="dotted-line hidden"></span>
-                                    <span class="data-min hidden" style="color: blue;">15°C</span>
-                                </td>
-                                <!-- Herbst -->
-                                <td class="border p-2 column-autumn hidden temperature-cell">
-                                    <span class="data-max hidden" style="color: red;">22°C</span>
-                                    <span class="dotted-line hidden"></span>
-                                    <span class="data-min hidden" style="color: blue;">8°C</span>
-                                </td>
-                                <!-- Winter -->
-                                <td class="border p-2 column-winter hidden temperature-cell">
-                                    <span class="data-max hidden" style="color: red;">10°C</span>
-                                    <span class="dotted-line hidden"></span>
-                                    <span class="data-min hidden" style="color: blue;">-2°C</span>
-                                </td>
-                            </tr>
-                            <!-- Weitere Zeilen können nach Bedarf ergänzt werden -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="flex justify-center mt-4">
+          <button id="search-button" class="px-6 py-2 bg-blue-500 text-white rounded-lg">Suchen</button>
         </div>
+      </div>
+      <div class="flex-grow rounded-lg shadow-md">
+        <div id="map"></div>
+      </div>
     </div>
 
-    <script>
-        // Initialisiert die Karte mit Leaflet
-        var map = L.map('map').setView([51.505, -0.09], 13);
+    <!-- Rechte Hälfte: Stationenliste und Daten-Tabelle -->
+    <div class="w-1/2 p-4 flex flex-col space-y-4">
+      <div class="bg-white p-4 rounded-lg shadow-md flex flex-col space-y-2">
+        <h2 class="text-lg font-semibold">Wetterstationen</h2>
+        <ul id="station-list" class="space-y-1">
+          <!-- Dynamische Stationenliste (paginiert) -->
+        </ul>
+        <div class="flex justify-center mt-2 space-x-4">
+          <button id="prev-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg">←</button>
+          <button id="next-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg">→</button>
+        </div>
+      </div>
+      <!-- Filter und Daten-Tabelle -->
+      <div class="bg-white p-4 rounded-lg shadow-md">
+        <h2 class="text-lg font-semibold mb-4">Datenfilter und Tabelle</h2>
+        <!-- Filter-Checkboxen in ursprünglicher Reihenfolge -->
+        <div class="grid grid-cols-4 grid-rows-2 gap-4 mb-4">
+          <!-- Maximalwerte (bleiben initial deaktiviert beim neuen Suchen) -->
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" class="rounded" id="filter-minmax-max" onchange="toggleMinMax('max', this)" checked>
+            <span>Maximalwerte</span>
+          </label>
+          <!-- Checkbox "Jährlich" steuert die Spalte "annual" -->
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" class="rounded" id="filter-annual" onchange="toggleColumn('annual', this)">
+            <span>Jährlich</span>
+          </label>
+          <!-- Checkbox für Sommer -->
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" class="rounded" id="filter-summer" onchange="toggleColumn('summer', this)">
+            <span>Sommer</span>
+          </label>
+          <!-- Checkbox für Winter -->
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" class="rounded" id="filter-winter" onchange="toggleColumn('winter', this)">
+            <span>Winter</span>
+          </label>
+          <!-- Minimalwerte -->
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" class="rounded" id="filter-minmax-min" onchange="toggleMinMax('min', this)" checked>
+            <span>Minimalwerte</span>
+          </label>
+          <div></div>
+          <!-- Checkbox für Herbst -->
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" class="rounded" id="filter-autumn" onchange="toggleColumn('autumn', this)">
+            <span>Herbst</span>
+          </label>
+          <!-- Checkbox für Frühling -->
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" class="rounded" id="filter-spring" onchange="toggleColumn('spring', this)">
+            <span>Frühling</span>
+          </label>
+        </div>
+        <!-- Die Tabelle zeigt standardmäßig nur die Jahr-Spalte (immer sichtbar) -->
+        <div class="overflow-x-auto">
+          <table class="w-full border">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="border p-2 column-year">Jahr</th>
+                <th class="border p-2 column-annual">Jährlich</th>
+                <th class="border p-2 column-spring">Frühling</th>
+                <th class="border p-2 column-summer">Sommer</th>
+                <th class="border p-2 column-autumn">Herbst</th>
+                <th class="border p-2 column-winter">Winter</th>
+              </tr>
+            </thead>
+            <tbody id="data-table-body">
+              <!-- Dynamische Datenzeilen -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        // OpenStreetMap-Kartenkacheln hinzufügen
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+  <!-- JavaScript: API-Aufrufe, Marker, Pagination, Filter-Reset und Validierung -->
+  <script>
+    // Synchronisation von Radius-Slider und Zahlenfeld
+    const radiusSlider = document.getElementById('radius-slider');
+    const radiusInput = document.getElementById('radius-input');
+    radiusSlider.addEventListener('input', () => {
+      radiusInput.value = radiusSlider.value;
+    });
+    radiusInput.addEventListener('input', () => {
+      if (radiusInput.value >= radiusSlider.min && radiusInput.value <= radiusSlider.max) {
+        radiusSlider.value = radiusInput.value;
+      }
+    });
 
-        // Synchronisiert den Range-Slider mit dem Zahlen-Eingabefeld
-        const radiusSlider = document.getElementById('radius-slider');
-        const radiusInput = document.getElementById('radius-input');
+    // Definition benutzerdefinierter Marker-Icons
+    var redIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+    var blueIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
 
-        radiusSlider.addEventListener('input', () => {
-            radiusInput.value = radiusSlider.value;
-        });
+    // Karte initialisieren
+    var map = L.map('map').setView([51.505, -0.09], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-        radiusInput.addEventListener('input', () => {
-            if (radiusInput.value >= radiusSlider.min && radiusInput.value <= radiusSlider.max) {
-                radiusSlider.value = radiusInput.value;
-            }
-        });
+    // Globale Variablen für Stationsergebnisse, Pagination und Marker
+    var allStations = [];
+    var currentPage = 0;
+    var pageSize = 5;
+    var stationMarkers = [];
+    var currentLocationMarker = null;
 
-        // Schaltet Minimal- und Maximalwerte für ALLE Spalten (Temperatur, Frühling etc.) ein oder aus
-        function toggleMinMax(type, checkbox) {
-            const minElements = document.querySelectorAll('.data-min');
-            const maxElements = document.querySelectorAll('.data-max');
-            const dottedLines = document.querySelectorAll('.dotted-line');
+    // Entfernt alle Marker von der Karte
+    function clearStationMarkers() {
+      stationMarkers.forEach(marker => {
+        map.removeLayer(marker);
+      });
+      stationMarkers = [];
+    }
 
-            if (type === 'min') {
-                // Min-Werte je nach Checkbox ein-/ausblenden
-                minElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
-            } else if (type === 'max') {
-                // Max-Werte je nach Checkbox ein-/ausblenden
-                maxElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
-            }
-
-            // Zeigt die gepunktete Linie nur, wenn in derselben Zelle sowohl Min als auch Max sichtbar sind
-            dottedLines.forEach(line => {
-                const parentCell = line.closest('td');
-                if (!parentCell) return;
-
-                const minVisible = parentCell.querySelector('.data-min:not(.hidden)');
-                const maxVisible = parentCell.querySelector('.data-max:not(.hidden)');
-
-                line.classList.toggle('hidden', !(minVisible && maxVisible));
-            });
+    // Setzt alle Filter-Checkboxen zurück (alle werden unselected)
+    function resetFilters() {
+      const filterIds = [
+        'filter-annual', 'filter-summer', 'filter-winter',
+        'filter-autumn', 'filter-spring',
+        'filter-minmax-max', 'filter-minmax-min'
+      ];
+      filterIds.forEach(id => {
+        const cb = document.getElementById(id);
+        if (cb) {
+          cb.checked = false;
+          // Wende die jeweilige Toggle-Funktion direkt an:
+          if (id.startsWith('filter-minmax')) {
+            const type = id.endsWith('max') ? 'max' : 'min';
+            toggleMinMax(type, cb);
+          } else {
+            // Extrahiere den Spaltennamen aus der ID (z.B. "annual" bei filter-annual)
+            const col = id.split('-')[1];
+            toggleColumn(col, cb);
+          }
         }
+      });
+    }
 
-        // Schaltet ganze Spalten (temperature, spring, summer, autumn, winter) ein-/aus
-        function toggleColumn(columnClass, checkbox) {
-            const elements = document.querySelectorAll(`.column-${columnClass}`);
-            elements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
-        }
-    </script>
+    // Validiert, ob die erforderlichen Eingaben ausgefüllt sind
+    function validateInputs() {
+      const latitude = document.getElementById('latitude').value.trim();
+      const longitude = document.getElementById('longitude').value.trim();
+      const startYear = document.getElementById('start-year').value.trim();
+      const endYear = document.getElementById('end-year').value.trim();
+      if (!latitude || !longitude || !startYear || !endYear) {
+        alert("Bitte füllen Sie alle erforderlichen Felder aus: Breite, Länge, Startjahr und Endjahr.");
+        return false;
+      }
+      return true;
+    }
+
+    // Aktualisiert die paginierte Stationenliste
+    function displayStationPage() {
+      var startIndex = currentPage * pageSize;
+      var endIndex = startIndex + pageSize;
+      var pageStations = allStations.slice(startIndex, endIndex);
+      var stationList = document.getElementById('station-list');
+      stationList.innerHTML = '';
+      pageStations.forEach(station => {
+        var li = document.createElement('li');
+        li.className = 'p-2 border rounded-lg cursor-pointer hover:bg-gray-200';
+        li.textContent = station.name + " (" + station.distance + " km)";
+        li.dataset.stationId = station.id;
+        li.addEventListener('click', function() {
+          var startYear = document.getElementById('start-year').value;
+          var endYear = document.getElementById('end-year').value;
+          fetch(`/api/get_station_data/?station_id=${station.id}&start_year=${startYear}&end_year=${endYear}`)
+            .then(response => response.json())
+            .then(result => {
+              if(result.error) {
+                console.error(result.error);
+                updateDataTable({ error: result.error });
+              } else {
+                updateDataTable(result);
+              }
+            })
+            .catch(err => console.error(err));
+        });
+        stationList.appendChild(li);
+      });
+    }
+
+    // Baut die Datentabelle auf und wendet die Filter an.
+    // Standardmäßig wird nur die Jahr-Spalte angezeigt.
+    function updateDataTable(data) {
+      const tableBody = document.getElementById('data-table-body');
+      tableBody.innerHTML = '';
+      if(data.error) {
+        tableBody.innerHTML = `<tr><td colspan="6">${data.error}</td></tr>`;
+        return;
+      }
+      const annual = data.annual;
+      const seasonal = data.seasonal;
+      const years = Object.keys(annual).sort();
+      years.forEach(year => {
+        var tr = document.createElement('tr');
+
+        // Spalte: Jahr (immer sichtbar)
+        var tdYear = document.createElement('td');
+        tdYear.className = 'border p-2 column-year';
+        tdYear.innerHTML = `<div class="cell-content">${year}</div>`;
+        tr.appendChild(tdYear);
+
+        // Spalte: Jährlich
+        var tdAnnual = document.createElement('td');
+        tdAnnual.className = 'border p-2 column-annual';
+        var annualTmax = annual[year].TMAX.avg !== null ? annual[year].TMAX.avg + "°C" : "N/A";
+        var annualTmin = annual[year].TMIN.avg !== null ? annual[year].TMIN.avg + "°C" : "N/A";
+        tdAnnual.innerHTML = `<div class="cell-content">
+                                <span class="data-max">${annualTmax}</span>
+                                <span class="dotted-line"></span>
+                                <span class="data-min">${annualTmin}</span>
+                              </div>`;
+        tr.appendChild(tdAnnual);
+
+        // Spalte: Frühling
+        var tdSpring = document.createElement('td');
+        tdSpring.className = 'border p-2 column-spring';
+        var springTmax = seasonal[year].spring.TMAX !== null ? seasonal[year].spring.TMAX + "°C" : "N/A";
+        var springTmin = seasonal[year].spring.TMIN !== null ? seasonal[year].spring.TMIN + "°C" : "N/A";
+        tdSpring.innerHTML = `<div class="cell-content">
+                                <span class="data-max">${springTmax}</span>
+                                <span class="dotted-line"></span>
+                                <span class="data-min">${springTmin}</span>
+                              </div>`;
+        tr.appendChild(tdSpring);
+
+        // Spalte: Sommer
+        var tdSummer = document.createElement('td');
+        tdSummer.className = 'border p-2 column-summer';
+        var summerTmax = seasonal[year].summer.TMAX !== null ? seasonal[year].summer.TMAX + "°C" : "N/A";
+        var summerTmin = seasonal[year].summer.TMIN !== null ? seasonal[year].summer.TMIN + "°C" : "N/A";
+        tdSummer.innerHTML = `<div class="cell-content">
+                                <span class="data-max">${summerTmax}</span>
+                                <span class="dotted-line"></span>
+                                <span class="data-min">${summerTmin}</span>
+                              </div>`;
+        tr.appendChild(tdSummer);
+
+        // Spalte: Herbst
+        var tdAutumn = document.createElement('td');
+        tdAutumn.className = 'border p-2 column-autumn';
+        var autumnTmax = seasonal[year].autumn.TMAX !== null ? seasonal[year].autumn.TMAX + "°C" : "N/A";
+        var autumnTmin = seasonal[year].autumn.TMIN !== null ? seasonal[year].autumn.TMIN + "°C" : "N/A";
+        tdAutumn.innerHTML = `<div class="cell-content">
+                                <span class="data-max">${autumnTmax}</span>
+                                <span class="dotted-line"></span>
+                                <span class="data-min">${autumnTmin}</span>
+                              </div>`;
+        tr.appendChild(tdAutumn);
+
+        // Spalte: Winter
+        var tdWinter = document.createElement('td');
+        tdWinter.className = 'border p-2 column-winter';
+        var winterTmax = seasonal[year].winter.TMAX !== null ? seasonal[year].winter.TMAX + "°C" : "N/A";
+        var winterTmin = seasonal[year].winter.TMIN !== null ? seasonal[year].winter.TMIN + "°C" : "N/A";
+        tdWinter.innerHTML = `<div class="cell-content">
+                                <span class="data-max">${winterTmax}</span>
+                                <span class="dotted-line"></span>
+                                <span class="data-min">${winterTmin}</span>
+                              </div>`;
+        tr.appendChild(tdWinter);
+
+        tableBody.appendChild(tr);
+      });
+
+      // Wende die aktuell gesetzten Filter an (die Jahr-Spalte bleibt immer sichtbar)
+      toggleColumn('annual', document.getElementById('filter-annual'));
+      toggleColumn('spring', document.getElementById('filter-spring'));
+      toggleColumn('summer', document.getElementById('filter-summer'));
+      toggleColumn('autumn', document.getElementById('filter-autumn'));
+      toggleColumn('winter', document.getElementById('filter-winter'));
+    }
+
+    // Beim Klick auf "Suchen": Eingaben validieren, Filter zurücksetzen, Stationen abrufen und anzeigen
+    document.getElementById('search-button').addEventListener('click', function() {
+      // Validierung der erforderlichen Eingaben:
+      if (!validateInputs()) return;
+
+      // Beim neuen Suchvorgang werden alle Filter zurückgesetzt:
+      resetFilters();
+
+      const latitude = document.getElementById('latitude').value;
+      const longitude = document.getElementById('longitude').value;
+      const radius = document.getElementById('radius-input').value;
+      const stationCountInput = document.getElementById('station-count').value;
+      const stationCountParam = stationCountInput ? stationCountInput : '';
+      fetch(`/api/search_stations/?latitude=${latitude}&longitude=${longitude}&radius=${radius}&station_count=${stationCountParam}`)
+        .then(response => response.json())
+        .then(data => {
+          allStations = data.stations;
+          currentPage = 0;
+          clearStationMarkers();
+          allStations.forEach(station => {
+            var marker = L.marker([station.latitude, station.longitude], {icon: blueIcon})
+              .bindPopup(`<b>${station.name}</b><br>${station.latitude}, ${station.longitude}`);
+            marker.addTo(map);
+            stationMarkers.push(marker);
+          });
+          if(currentLocationMarker) { map.removeLayer(currentLocationMarker); }
+          currentLocationMarker = L.marker([latitude, longitude], {icon: redIcon})
+            .bindPopup("Ihre Position")
+            .addTo(map);
+          map.setView([latitude, longitude], 10);
+          displayStationPage();
+        })
+        .catch(err => console.error(err));
+    });
+
+    // Pagination: Vorherige Seite
+    document.getElementById('prev-button').addEventListener('click', function() {
+      if (currentPage > 0) {
+        currentPage--;
+        displayStationPage();
+      }
+    });
+
+    // Pagination: Nächste Seite
+    document.getElementById('next-button').addEventListener('click', function() {
+      if ((currentPage + 1) * pageSize < allStations.length) {
+        currentPage++;
+        displayStationPage();
+      }
+    });
+
+    // Funktionen für Checkbox-Steuerung:
+    function toggleMinMax(type, checkbox) {
+      const minElements = document.querySelectorAll('.data-min');
+      const maxElements = document.querySelectorAll('.data-max');
+      const dottedLines = document.querySelectorAll('.dotted-line');
+      if (type === 'min') {
+        minElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
+      } else if (type === 'max') {
+        maxElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
+      }
+      dottedLines.forEach(line => {
+        const parentCell = line.closest('td');
+        if (!parentCell) return;
+        const minVisible = parentCell.querySelector('.data-min:not(.hidden)');
+        const maxVisible = parentCell.querySelector('.data-max:not(.hidden)');
+        line.classList.toggle('hidden', !(minVisible && maxVisible));
+      });
+    }
+    function toggleColumn(columnClass, checkbox) {
+      const elements = document.querySelectorAll(`.column-${columnClass}`);
+      elements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
+    }
+  </script>
 </body>
 </html>
