@@ -8,9 +8,9 @@ from django.http import JsonResponse, HttpResponseBadRequest
 
 def index(request):
     """
-    Liefert die Startseite (das Frontend) aus templates/weather_map.html.
+    Liefert die Startseite (das Frontend) aus templates/frontend.html.
     """
-    return render(request, "weather_map.html")
+    return render(request, "frontend.html")
 
 
 def haversine(lat1, lon1, lat2, lon2):
