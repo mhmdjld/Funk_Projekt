@@ -73,7 +73,8 @@
           </div>
           <div>
             <label for="station-count" class="block text-sm font-medium">Anzahl der Wetterstationen</label>
-            <input id="station-count" type="number" placeholder="z.B. 20" class="w-full border rounded-lg p-2">
+            <!-- min und max sind zwar gesetzt, aber zusätzliche Validierung folgt -->
+            <input id="station-count" type="number" min="1" max="10" placeholder="z.B. 5" class="w-full border rounded-lg p-2">
           </div>
           <div>
             <label for="radius" class="block text-sm font-medium">Umkreis (km)</label>
@@ -102,10 +103,16 @@
         <ul id="station-list" class="space-y-1">
           <!-- Dynamische Stationenliste (paginiert) -->
         </ul>
-        <div class="flex justify-center mt-2 space-x-4">
-          <!-- Pagination: Vorherige Seite, Nächste Seite -->
-          <button id="prev-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg">←</button>
-          <button id="next-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg">→</button>
+        <!-- Neuer Bereich für die Pagination: Zuerst die Seitenanzeige, dann die Pfeile -->
+        <div class="flex flex-col items-center mt-2">
+          <div id="page-indicator" class="flex space-x-2 mb-2">
+            <!-- Hier werden die kleinen Boxen mit den Seitenzahlen eingefügt -->
+          </div>
+          <div class="flex justify-center space-x-4">
+            <!-- Pagination: Vorherige Seite, Nächste Seite -->
+            <button id="prev-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg">←</button>
+            <button id="next-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg">→</button>
+          </div>
         </div>
       </div>
       <!-- Filter und Daten-Tabelle, Filter Checkboxen, Tabelle dynamisch befüllen -->
@@ -219,6 +226,8 @@
     var pageSize = 5;
     var stationMarkers = [];
     var currentLocationMarker = null;
+    // Neue globale Variable für den Suchradius-Kreis
+    var searchRadiusCircle = null;
 
     // Entfernt alle Stationen Marker von der Karte, leere Marker Liste
     function clearStationMarkers() {
@@ -265,7 +274,7 @@
       return true;
     }
 
-    // Aktualisiert die paginierte Stationenliste, zeigt current page an, fügt Click Event zum Laden von Stationendaten hinzu
+    // Baut die paginierte Stationenliste auf und ruft danach updatePaginationControls() auf
     function displayStationPage() {
       var startIndex = currentPage * pageSize;
       var endIndex = startIndex + pageSize;
@@ -294,9 +303,11 @@
         });
         stationList.appendChild(li);
       });
+      // Aktualisiere die Pagination-Anzeige
+      updatePaginationControls();
     }
 
-    // Baut die Datentabelle auf, wendet Filter an, erstellt für jedes Jahr eine Zeile mit festen Spalten (Jahr, Jährlich, Frühling, Sommer, Herbst, Winter)
+    // Aktualisiert die Datentabelle
     function updateDataTable(data) {
       const tableBody = document.getElementById('data-table-body');
       tableBody.innerHTML = '';
@@ -387,21 +398,74 @@
       toggleColumn('winter', document.getElementById('filter-winter'));
     }
 
+    // Aktualisiert die Pagination-Steuerung (Seitenanzeige und Pfeile)
+    function updatePaginationControls() {
+      // Berechne die Gesamtseitenzahl (maximal 10 Stationen, pageSize = 5 → max. 2 Seiten)
+      const totalPages = Math.ceil(allStations.length / pageSize);
+      const pageIndicator = document.getElementById('page-indicator');
+      pageIndicator.innerHTML = ''; // alte Inhalte entfernen
+
+      for (let i = 0; i < totalPages; i++) {
+        const box = document.createElement('div');
+        box.textContent = i + 1;
+        box.className = "w-8 h-8 flex items-center justify-center border rounded cursor-pointer";
+        if(i === currentPage) {
+          box.classList.add("bg-blue-500", "text-white");
+        } else {
+          box.classList.add("bg-gray-300", "text-black");
+        }
+        // Ermögliche direktes Springen zu Seite i+1:
+        box.addEventListener('click', function() {
+          currentPage = i;
+          displayStationPage();
+        });
+        pageIndicator.appendChild(box);
+      }
+
+      // Aktualisiere die Pfeilfarben: Bei der ersten Seite wird der linke Pfeil grau (deaktiviert),
+      // bei der letzten Seite wird der rechte Pfeil grau.
+      const prevButton = document.getElementById('prev-button');
+      const nextButton = document.getElementById('next-button');
+      if(currentPage === 0) {
+        prevButton.classList.remove("bg-blue-500");
+        prevButton.classList.add("bg-gray-300", "cursor-not-allowed");
+      } else {
+        prevButton.classList.remove("bg-gray-300", "cursor-not-allowed");
+        prevButton.classList.add("bg-blue-500");
+      }
+      if(currentPage === totalPages - 1 || totalPages === 0) {
+        nextButton.classList.remove("bg-blue-500");
+        nextButton.classList.add("bg-gray-300", "cursor-not-allowed");
+      } else {
+        nextButton.classList.remove("bg-gray-300", "cursor-not-allowed");
+        nextButton.classList.add("bg-blue-500");
+      }
+    }
+
     // Beim Klick auf "Suchen": Eingaben validieren, Filter zurücksetzen, API-Aufruf zum Abrufen von Stationen, Marker setzen, Karte zentrieren, Stationenliste anzeigen
     document.getElementById('search-button').addEventListener('click', function() {
       if (!validateInputs()) return; // Validierung der erforderlichen Eingaben
+
+      // Stationenanzahl validieren: Wenn leer -> Standard 10, wenn > 10 -> Fehler
+      let stationCountInput = document.getElementById('station-count').value;
+      let stationCount = stationCountInput ? parseInt(stationCountInput) : 10;
+      if (stationCount > 10) {
+        alert("Bitte nur maximal 10 eingeben");
+        return;
+      }
 
       resetFilters(); // Alle Filter-Checkboxen zurücksetzen
 
       const latitude = document.getElementById('latitude').value;
       const longitude = document.getElementById('longitude').value;
       const radius = document.getElementById('radius-input').value;
-      const stationCountInput = document.getElementById('station-count').value;
-      const stationCountParam = stationCountInput ? stationCountInput : '';
+      // Stationenanzahl wird nun als validierter Wert (max. 10) verwendet
+      const stationCountParam = stationCount;
       fetch(`/api/search_stations/?latitude=${latitude}&longitude=${longitude}&radius=${radius}&station_count=${stationCountParam}`)
         .then(response => response.json())
         .then(data => {
-          allStations = data.stations;
+          // Auch hier stellen wir sicher, dass maximal 10 Stationen angezeigt werden
+          allStations = data.stations.slice(0, 10);
           currentPage = 0;
           clearStationMarkers();
           // Für jede gefundene Station: Marker hinzufügen, Popup mit Stationdaten
@@ -416,13 +480,25 @@
           currentLocationMarker = L.marker([latitude, longitude], {icon: redIcon})
             .bindPopup("Ihre Position")
             .addTo(map);
+
+          // Neuen Suchradius-Kreis auf der Karte anzeigen (Radius in km -> Meter umrechnen)
+          if(searchRadiusCircle) {
+            map.removeLayer(searchRadiusCircle);
+          }
+          searchRadiusCircle = L.circle([latitude, longitude], {
+            radius: parseFloat(radius) * 1000,
+            color: 'blue',
+            fillColor: 'blue',
+            fillOpacity: 0.1
+          }).addTo(map);
+
           map.setView([latitude, longitude], 10);
-          displayStationPage(); // Paginierte Stationenliste anzeigen
+          displayStationPage(); // Paginierte Stationenliste anzeigen (dies ruft updatePaginationControls() auf)
         })
         .catch(err => console.error(err));
     });
 
-    // Pagination: Vorherige Seite, Seite verringern, Stationenliste neu anzeigen
+    // Pagination: Vorherige Seite
     document.getElementById('prev-button').addEventListener('click', function() {
       if (currentPage > 0) {
         currentPage--;
@@ -430,7 +506,7 @@
       }
     });
 
-    // Pagination: Nächste Seite, Seite erhöhen, Stationenliste neu anzeigen
+    // Pagination: Nächste Seite
     document.getElementById('next-button').addEventListener('click', function() {
       if ((currentPage + 1) * pageSize < allStations.length) {
         currentPage++;
