@@ -181,8 +181,21 @@
     </div>
   </div>
 
-  <!-- JavaScript: API-Aufrufe, Marker, Pagination, Filter-Reset, Validierung, neue Marker-Icons -->
+  <!-- Loading Spinner (wird angezeigt, solange im Hintergrund geladen wird) -->
+  <div id="loading-spinner" class="hidden fixed inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50" style="z-index: 9999;">
+    <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+
+  <!-- JavaScript: API-Aufrufe, Marker, Pagination, Filter-Reset, Validierung, neue Marker-Icons, Loading Spinner -->
   <script>
+    // Funktionen zum Anzeigen und Ausblenden des Loading Spinners
+    function showSpinner() {
+      document.getElementById("loading-spinner").classList.remove("hidden");
+    }
+    function hideSpinner() {
+      document.getElementById("loading-spinner").classList.add("hidden");
+    }
+
     // Synchronisation von Radius-Slider und Zahlenfeld, Slider Input verbinden
     const radiusSlider = document.getElementById('radius-slider');
     const radiusInput = document.getElementById('radius-input');
@@ -237,7 +250,7 @@
       stationMarkers = [];
     }
 
-    // Setzt alle Filter Checkboxen zurück, alle Filter werden unselected, wendet Toggle Funktion direkt an
+    // Reset-Funktion für Filter (angepasst: Für Minimal- und Maximalwerte bleiben die Checkboxen standardmäßig checked)
     function resetFilters() {
       const filterIds = [
         'filter-annual', 'filter-summer', 'filter-winter',
@@ -247,13 +260,13 @@
       filterIds.forEach(id => {
         const cb = document.getElementById(id);
         if (cb) {
-          cb.checked = false;
-          // Wende die jeweilige Toggle Funktion direkt an:
           if (id.startsWith('filter-minmax')) {
-            const type = id.endsWith('max') ? 'max' : 'min';
-            toggleMinMax(type, cb);
+            // Minimal- und Maximalwerte sollen standardmäßig aktiviert bleiben
+            cb.checked = true;
+            toggleMinMax(id.endsWith('max') ? 'max' : 'min', cb);
           } else {
-            // Extrahiere den Spaltennamen aus der ID (z.B. "annual" bei filter-annual)
+            // Andere Filter werden zurückgesetzt (unchecked)
+            cb.checked = false;
             const col = id.split('-')[1];
             toggleColumn(col, cb);
           }
@@ -287,6 +300,7 @@
         li.textContent = station.name + " (" + station.distance + " km)";
         li.dataset.stationId = station.id;
         li.addEventListener('click', function() {
+          showSpinner(); // Spinner anzeigen, während Stationendaten geladen werden
           var startYear = document.getElementById('start-year').value;
           var endYear = document.getElementById('end-year').value;
           fetch(`/api/get_station_data/?station_id=${station.id}&start_year=${startYear}&end_year=${endYear}`)
@@ -298,8 +312,12 @@
               } else {
                 updateDataTable(result);
               }
+              hideSpinner(); // Spinner ausblenden, wenn Daten geladen wurden
             })
-            .catch(err => console.error(err));
+            .catch(err => {
+              console.error(err);
+              hideSpinner();
+            });
         });
         stationList.appendChild(li);
       });
@@ -454,13 +472,15 @@
         return;
       }
 
-      resetFilters(); // Alle Filter-Checkboxen zurücksetzen
+      resetFilters(); // Alle Filter-Checkboxen zurücksetzen (bei Minimal-/Maximalwerten bleiben diese nun checked)
 
       const latitude = document.getElementById('latitude').value;
       const longitude = document.getElementById('longitude').value;
       const radius = document.getElementById('radius-input').value;
       // Stationenanzahl wird nun als validierter Wert (max. 10) verwendet
       const stationCountParam = stationCount;
+
+      showSpinner(); // Spinner anzeigen, während die Such-API abgefragt wird
       fetch(`/api/search_stations/?latitude=${latitude}&longitude=${longitude}&radius=${radius}&station_count=${stationCountParam}`)
         .then(response => response.json())
         .then(data => {
@@ -494,8 +514,12 @@
 
           map.setView([latitude, longitude], 10);
           displayStationPage(); // Paginierte Stationenliste anzeigen (dies ruft updatePaginationControls() auf)
+          hideSpinner(); // Spinner ausblenden, wenn Suche abgeschlossen ist
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+          console.error(err);
+          hideSpinner();
+        });
     });
 
     // Pagination: Vorherige Seite
