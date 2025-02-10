@@ -276,13 +276,41 @@
 
     // Validiert, ob erforderliche Eingaben (Breite, Länge, Startjahr, Endjahr) ausgefüllt sind, sonst Alert
     function validateInputs() {
-      const latitude = document.getElementById('latitude').value.trim();
-      const longitude = document.getElementById('longitude').value.trim();
-      const startYear = document.getElementById('start-year').value.trim();
-      const endYear = document.getElementById('end-year').value.trim();
-      if (!latitude || !longitude || !startYear || !endYear) {
+      const latStr = document.getElementById('latitude').value.trim();
+      const lonStr = document.getElementById('longitude').value.trim();
+      const startYearStr = document.getElementById('start-year').value.trim();
+      const endYearStr = document.getElementById('end-year').value.trim();
+      if (!latStr || !lonStr || !startYearStr || !endYearStr) {
         alert("Bitte füllen Sie alle erforderlichen Felder aus: Breite, Länge, Startjahr und Endjahr.");
         return false;
+      }
+      const latitude = parseFloat(latStr);
+      const longitude = parseFloat(lonStr);
+      const startYear = parseInt(startYearStr);
+      const endYear = parseInt(endYearStr);
+      if (isNaN(latitude) || latitude < -90 || latitude > 90) {
+        alert("Ungültiger Breitengrad. Bitte geben Sie eine Zahl zwischen -90 und 90 ein.");
+        return false;
+      }
+      if (isNaN(longitude) || longitude < -180 || longitude > 180) {
+        alert("Ungültiger Längengrad. Bitte geben Sie eine Zahl zwischen -180 und 180 ein.");
+        return false;
+      }
+      if (isNaN(startYear) || startYear < 1900) {
+        alert("Ungültiges Jahr. Bitte geben Sie ein Jahr ab 1900 ein.");
+        return false;
+      }
+      if (isNaN(endYear) || endYear < startYear) {
+        alert("Endjahr muss größer oder gleich dem Startjahr sein.");
+        return false;
+      }
+      const stationCountInput = document.getElementById('station-count').value;
+      if (stationCountInput) {
+        const stationCount = parseInt(stationCountInput);
+        if (isNaN(stationCount) || stationCount <= 0) {
+          alert("Bitte geben Sie eine Anzahl größer als 0 ein.");
+          return false;
+        }
       }
       return true;
     }
@@ -312,10 +340,11 @@
               } else {
                 updateDataTable(result);
               }
-              hideSpinner(); // Spinner ausblenden, wenn Daten geladen wurden
+              hideSpinner();
             })
             .catch(err => {
               console.error(err);
+              alert("Fehler: Server nicht erreichbar. Bitte versuchen Sie es später erneut.");
               hideSpinner();
             });
         });
@@ -484,6 +513,11 @@
       fetch(`/api/search_stations/?latitude=${latitude}&longitude=${longitude}&radius=${radius}&station_count=${stationCountParam}`)
         .then(response => response.json())
         .then(data => {
+          if(data.stations.length === 0) {
+            alert("Keine Wetterstationen im angegebenen Umkreis gefunden. Bitte ändern Sie Ihre Eingaben.");
+            hideSpinner();
+            return;
+          }
           // Auch hier stellen wir sicher, dass maximal 10 Stationen angezeigt werden
           allStations = data.stations.slice(0, 10);
           currentPage = 0;
@@ -518,6 +552,7 @@
         })
         .catch(err => {
           console.error(err);
+          alert("Fehler: Server nicht erreichbar. Bitte versuchen Sie es später erneut.");
           hideSpinner();
         });
     });
