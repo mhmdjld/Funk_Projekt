@@ -15,7 +15,7 @@ def index(request):
 
 def haversine(lat1, lon1, lat2, lon2):
     """
-    Berechnet die Distanz (in Kilometern) zwischen zwei Punkten (lat, lon)
+    Berechnet die Distanz (in Kilometern) zwischen zwei Punkten (lat: (Breite), lon: (Länger))
     mittels der Haversine-Formel.
     """
     R = 6371  # Erdradius in km
@@ -35,8 +35,8 @@ def search_stations(request):
     Erwartete GET-Parameter:
       - latitude (Breite, float)
       - longitude (Länge, float)
-      - radius (Suchradius in km, optional, Standard: 10 km)
-      - station_count (Anzahl der Wetterstationen, optional; wenn leer, werden bis zu 100 Stationen zurückgegeben)
+      - radius (Suchradius in km, Standard: 10 km)
+      - station_count (Anzahl der Wetterstationen)
     """
     try:
         lat = float(request.GET.get('latitude'))
@@ -45,11 +45,14 @@ def search_stations(request):
 
         station_count_str = request.GET.get('station_count', '')
         if not station_count_str:
-            station_count = 100  # Standard: bis zu 100 Stationen zurückgeben
+            station_count = None  # Kein Wert
         else:
             station_count = int(station_count_str)
     except (TypeError, ValueError):
         return HttpResponseBadRequest("Ungültige Parameter.")
+    # Falls station_count nicht angegeben wurde, eine leere Liste zurückgeben:
+    if station_count is None:
+        return JsonResponse({"stations": []})
 
     stations_url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt"
     try:

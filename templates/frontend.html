@@ -186,7 +186,7 @@
     <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
   </div>
 
-  <!-- JavaScript: API-Aufrufe, Marker, Pagination, Filter-Reset, Validierung, neue Marker-Icons, Loading Spinner -->
+  <!-- JavaScript: API-Aufrufe, Marker, Pagination, Filter-Reset, Validierung, Marker-Icons, Loading Spinner -->
   <script>
     // Funktionen zum Anzeigen und Ausblenden des Loading Spinners
     function showSpinner() {
@@ -239,7 +239,7 @@
     var pageSize = 5;
     var stationMarkers = [];
     var currentLocationMarker = null;
-    // Neue globale Variable für den Suchradius-Kreis
+    // Globale Variable für den Suchradius-Kreis
     var searchRadiusCircle = null;
 
     // Entfernt alle Stationen Marker von der Karte, leere Marker Liste
@@ -280,8 +280,12 @@
       const lonStr = document.getElementById('longitude').value.trim();
       const startYearStr = document.getElementById('start-year').value.trim();
       const endYearStr = document.getElementById('end-year').value.trim();
-      if (!latStr || !lonStr || !startYearStr || !endYearStr) {
-        alert("Bitte füllen Sie alle erforderlichen Felder aus: Breite, Länge, Startjahr und Endjahr.");
+      // Station Count einlesen und trimmen
+      const stationCountStr = document.getElementById('station-count').value.trim();
+
+      // Überprüfe, ob stationCountStr vorhanden ist
+      if (!latStr || !lonStr || !startYearStr || !endYearStr || !stationCountStr) {
+        alert("Bitte füllen Sie alle erforderlichen Felder aus: Breite, Länge, Startjahr, Endjahr und Anzahl der Wetterstationen (zwischen 1 und 10).");
         return false;
       }
       const latitude = parseFloat(latStr);
@@ -304,13 +308,11 @@
         alert("Endjahr muss größer oder gleich dem Startjahr sein.");
         return false;
       }
-      const stationCountInput = document.getElementById('station-count').value;
-      if (stationCountInput) {
-        const stationCount = parseInt(stationCountInput);
-        if (isNaN(stationCount) || stationCount <= 0) {
-          alert("Bitte geben Sie eine Anzahl größer als 0 ein.");
-          return false;
-        }
+      // Station Count validieren (muss zwischen 1 und 10 liegen)
+      const stationCount = parseInt(stationCountStr);
+      if (isNaN(stationCount) || stationCount < 1 || stationCount > 10) {
+        alert("Bitte geben Sie eine Anzahl der Wetterstationen zwischen 1 und 10 ein.");
+        return false;
       }
       return true;
     }
@@ -535,7 +537,7 @@
             .bindPopup("Ihre Position")
             .addTo(map);
 
-          // Neuen Suchradius-Kreis auf der Karte anzeigen (Radius in km -> Meter umrechnen)
+          // Suchradius-Kreis auf der Karte anzeigen (Radius in km -> Meter umrechnen)
           if(searchRadiusCircle) {
             map.removeLayer(searchRadiusCircle);
           }
