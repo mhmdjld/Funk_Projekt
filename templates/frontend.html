@@ -594,7 +594,7 @@
         line.classList.toggle('hidden', !(minVisible && maxVisible));
       });
     }
-    // toggleColumn: Zeigt oder versteckt ganze Spalten (z.B. annual, seasonal), basierend auf Checkbox-Status
+    // toggleColumn: Zeigt oder versteckt ganze Spalten (z.B. annual, seasonal), basierend auf Checkbox-Status + Test New Token danach löschen
     function toggleColumn(columnClass, checkbox) {
       const elements = document.querySelectorAll(`.column-${columnClass}`);
       elements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
