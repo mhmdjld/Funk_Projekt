@@ -54,7 +54,7 @@ def search_stations(request):
     if station_count is None:
         return JsonResponse({"stations": []})
 
-    stations_url = "https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt"
+    stations_url = "https://noaa-ghcn-pds.s3.amazonaws.com/ghcnd-stations.txt"
     try:
         response = requests.get(stations_url)
         if response.status_code != 200:
