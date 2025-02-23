@@ -173,9 +173,9 @@ def get_station_data(request):
             tmax_vals = year_data[year_data['ELEMENT'] == 'TMAX']['VALUE']
             tmin_vals = year_data[year_data['ELEMENT'] == 'TMIN']['VALUE']
             if not tmax_vals.empty:
-                annual[year]["TMAX"]["avg"] = round(tmax_vals.mean(), 2)
+                annual[year]["TMAX"]["avg"] = format(tmax_vals.mean(), '.1f')
             if not tmin_vals.empty:
-                annual[year]["TMIN"]["avg"] = round(tmin_vals.mean(), 2)
+                annual[year]["TMIN"]["avg"] = format(tmin_vals.mean(), '.1f')
 
     # Berechne saisonale Durchschnittswerte:
     for year in range(start_year, end_year + 1):
@@ -185,27 +185,27 @@ def get_station_data(request):
             tmax_vals = spring[spring['ELEMENT'] == 'TMAX']['VALUE']
             tmin_vals = spring[spring['ELEMENT'] == 'TMIN']['VALUE']
             if not tmax_vals.empty:
-                seasonal[year]["spring"]["TMAX"] = round(tmax_vals.mean(), 2)
+                seasonal[year]["spring"]["TMAX"] = format(tmax_vals.mean(), '.1f')
             if not tmin_vals.empty:
-                seasonal[year]["spring"]["TMIN"] = round(tmin_vals.mean(), 2)
+                seasonal[year]["spring"]["TMIN"] = format(tmin_vals.mean(), '.1f')
         # Sommer: Juni, Juli, August
         summer = data[(data['YEAR'] == year) & (data['MONTH'].isin([6, 7, 8]))]
         if not summer.empty:
             tmax_vals = summer[summer['ELEMENT'] == 'TMAX']['VALUE']
             tmin_vals = summer[summer['ELEMENT'] == 'TMIN']['VALUE']
             if not tmax_vals.empty:
-                seasonal[year]["summer"]["TMAX"] = round(tmax_vals.mean(), 2)
+                seasonal[year]["summer"]["TMAX"] = format(tmax_vals.mean(), '.1f')
             if not tmin_vals.empty:
-                seasonal[year]["summer"]["TMIN"] = round(tmin_vals.mean(), 2)
+                seasonal[year]["summer"]["TMIN"] = format(tmin_vals.mean(), '.1f')
         # Herbst: September, Oktober, November
         autumn = data[(data['YEAR'] == year) & (data['MONTH'].isin([9, 10, 11]))]
         if not autumn.empty:
             tmax_vals = autumn[autumn['ELEMENT'] == 'TMAX']['VALUE']
             tmin_vals = autumn[autumn['ELEMENT'] == 'TMIN']['VALUE']
             if not tmax_vals.empty:
-                seasonal[year]["autumn"]["TMAX"] = round(tmax_vals.mean(), 2)
+                seasonal[year]["autumn"]["TMAX"] = format(tmax_vals.mean(), '.1f')
             if not tmin_vals.empty:
-                seasonal[year]["autumn"]["TMIN"] = round(tmin_vals.mean(), 2)
+                seasonal[year]["autumn"]["TMIN"] = format(tmin_vals.mean(), '.1f')
         # Winter: Dezember (des Vorjahres) plus Januar und Februar des laufenden Jahres
         winter = pd.concat([
             data[(data['YEAR'] == year - 1) & (data['MONTH'] == 12)],
@@ -215,9 +215,9 @@ def get_station_data(request):
             tmax_vals = winter[winter['ELEMENT'] == 'TMAX']['VALUE']
             tmin_vals = winter[winter['ELEMENT'] == 'TMIN']['VALUE']
             if not tmax_vals.empty:
-                seasonal[year]["winter"]["TMAX"] = round(tmax_vals.mean(), 2)
+                seasonal[year]["winter"]["TMAX"] = format(tmax_vals.mean(), '.1f')
             if not tmin_vals.empty:
-                seasonal[year]["winter"]["TMIN"] = round(tmin_vals.mean(), 2)
+                seasonal[year]["winter"]["TMIN"] = format(tmin_vals.mean(), '.1f')
 
     result = {"annual": annual, "seasonal": seasonal}
     return JsonResponse(result)

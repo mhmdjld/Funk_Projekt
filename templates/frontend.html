@@ -100,14 +100,10 @@
       <div class="bg-white p-4 rounded-lg shadow-md flex flex-col space-y-2">
         <h2 class="text-lg font-semibold">Wetterstationen</h2>
         <!-- Dynamische Stationenliste (paginiert), wird per API gefüllt -->
-        <ul id="station-list" class="space-y-1">
-          <!-- Dynamische Stationenliste (paginiert) -->
-        </ul>
+        <ul id="station-list" class="space-y-1"></ul>
         <!-- Neuer Bereich für die Pagination: Zuerst die Seitenanzeige, dann die Pfeile -->
         <div class="flex flex-col items-center mt-2">
-          <div id="page-indicator" class="flex space-x-2 mb-2">
-            <!-- Hier werden die kleinen Boxen mit den Seitenzahlen eingefügt -->
-          </div>
+          <div id="page-indicator" class="flex space-x-2 mb-2"></div>
           <div class="flex justify-center space-x-4">
             <!-- Pagination: Vorherige Seite, Nächste Seite -->
             <button id="prev-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg">←</button>
@@ -120,9 +116,9 @@
         <h2 class="text-lg font-semibold mb-4">Datenfilter und Tabelle</h2>
         <!-- Filter Checkboxen in ursprünglicher Reihenfolge, steuern Anzeige der Spalten -->
         <div class="grid grid-cols-4 grid-rows-2 gap-4 mb-4">
-          <!-- Maximalwerte (initial aktiviert beim Suchen, Checkbox an/aus) -->
+          <!-- Maximalwerte -->
           <label class="flex items-center space-x-2">
-            <input type="checkbox" class="rounded" id="filter-minmax-max" onchange="toggleMinMax('max', this)" checked>
+            <input type="checkbox" class="rounded" id="filter-minmax-max" onchange="toggleMinMax('max', this)">
             <span>Maximalwerte</span>
           </label>
           <!-- Checkbox "Jährlich", steuert Spalte "annual" -->
@@ -140,9 +136,9 @@
             <input type="checkbox" class="rounded" id="filter-winter" onchange="toggleColumn('winter', this)">
             <span>Winter</span>
           </label>
-          <!-- Minimalwerte (initial aktiviert, Checkbox an/aus) -->
+          <!-- Minimalwerte -->
           <label class="flex items-center space-x-2">
-            <input type="checkbox" class="rounded" id="filter-minmax-min" onchange="toggleMinMax('min', this)" checked>
+            <input type="checkbox" class="rounded" id="filter-minmax-min" onchange="toggleMinMax('min', this)">
             <span>Minimalwerte</span>
           </label>
           <div></div>
@@ -188,6 +184,9 @@
 
   <!-- JavaScript: API-Aufrufe, Marker, Pagination, Filter-Reset, Validierung, Marker-Icons, Loading Spinner -->
   <script>
+    // Globaler Flag
+    var isResettingFilters = false;
+
     // Funktionen zum Anzeigen und Ausblenden des Loading Spinners
     function showSpinner() {
       document.getElementById("loading-spinner").classList.remove("hidden");
@@ -250,8 +249,9 @@
       stationMarkers = [];
     }
 
-    // Reset-Funktion für Filter (angepasst: Für Minimal- und Maximalwerte bleiben die Checkboxen standardmäßig checked)
+    // Reset-Funktion für Filter
     function resetFilters() {
+      isResettingFilters = true;
       const filterIds = [
         'filter-annual', 'filter-summer', 'filter-winter',
         'filter-autumn', 'filter-spring',
@@ -260,18 +260,17 @@
       filterIds.forEach(id => {
         const cb = document.getElementById(id);
         if (cb) {
+          // Setze alle Checkboxen auf false und wende die jeweilige Funktion an
+          cb.checked = false;
           if (id.startsWith('filter-minmax')) {
-            // Minimal- und Maximalwerte sollen standardmäßig aktiviert bleiben
-            cb.checked = true;
             toggleMinMax(id.endsWith('max') ? 'max' : 'min', cb);
           } else {
-            // Andere Filter werden zurückgesetzt (unchecked)
-            cb.checked = false;
             const col = id.split('-')[1];
             toggleColumn(col, cb);
           }
         }
       });
+      isResettingFilters = false;
     }
 
     // Validiert, ob erforderliche Eingaben (Breite, Länge, Startjahr, Endjahr) ausgefüllt sind, sonst Alert
@@ -439,6 +438,10 @@
         tableBody.appendChild(tr);
       });
 
+      // Wende den initialen Zustand für Minimal- und Maximalwerte an
+      toggleMinMax('min', document.getElementById('filter-minmax-min'));
+      toggleMinMax('max', document.getElementById('filter-minmax-max'));
+
       // Wende aktuell gesetzte Filter an (Spalten werden per Checkbox gesteuert)
       toggleColumn('annual', document.getElementById('filter-annual'));
       toggleColumn('spring', document.getElementById('filter-spring'));
@@ -449,11 +452,9 @@
 
     // Aktualisiert die Pagination-Steuerung (Seitenanzeige und Pfeile)
     function updatePaginationControls() {
-      // Berechne die Gesamtseitenzahl (maximal 10 Stationen, pageSize = 5 → max. 2 Seiten)
       const totalPages = Math.ceil(allStations.length / pageSize);
       const pageIndicator = document.getElementById('page-indicator');
-      pageIndicator.innerHTML = ''; // alte Inhalte entfernen
-
+      pageIndicator.innerHTML = '';
       for (let i = 0; i < totalPages; i++) {
         const box = document.createElement('div');
         box.textContent = i + 1;
@@ -470,9 +471,6 @@
         });
         pageIndicator.appendChild(box);
       }
-
-      // Aktualisiere die Pfeilfarben: Bei der ersten Seite wird der linke Pfeil grau (deaktiviert),
-      // bei der letzten Seite wird der rechte Pfeil grau.
       const prevButton = document.getElementById('prev-button');
       const nextButton = document.getElementById('next-button');
       if(currentPage === 0) {
@@ -491,27 +489,60 @@
       }
     }
 
+    // Funktionen für Checkbox-Steuerung:
+    // toggleMinMax: Zeigt oder versteckt die Min/Max-Werte in den Zellen, passt Dotted-Line an
+    function toggleMinMax(type, checkbox) {
+      var tableBody = document.getElementById('data-table-body');
+      // Fehlercode nur auslösen, wenn nicht gerade die Filter zurückgesetzt werden
+      if (!isResettingFilters && (!tableBody || tableBody.children.length === 0)) {
+        alert("Bitte wählen Sie eine Wetterstation aus der Liste aus");
+        checkbox.checked = !checkbox.checked;
+        return;
+      }
+      const minElements = document.querySelectorAll('.data-min');
+      const maxElements = document.querySelectorAll('.data-max');
+      const dottedLines = document.querySelectorAll('.dotted-line');
+      if (type === 'min') {
+        minElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
+      } else if (type === 'max') {
+        maxElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
+      }
+      dottedLines.forEach(line => {
+        const parentCell = line.closest('td');
+        if (!parentCell) return;
+        const minVisible = parentCell.querySelector('.data-min:not(.hidden)');
+        const maxVisible = parentCell.querySelector('.data-max:not(.hidden)');
+        line.classList.toggle('hidden', !(minVisible && maxVisible));
+      });
+    }
+    // toggleColumn: Zeigt oder versteckt ganze Spalten (z.B. annual, seasonal), basierend auf Checkbox-Status
+    function toggleColumn(columnClass, checkbox) {
+      var tableBody = document.getElementById('data-table-body');
+      // Fehlercode nur auslösen, wenn nicht gerade die Filter zurückgesetzt werden
+      if (!isResettingFilters && (!tableBody || tableBody.children.length === 0)) {
+        alert("Bitte wählen Sie eine Wetterstation aus der Liste aus");
+        checkbox.checked = !checkbox.checked;
+        return;
+      }
+      const elements = document.querySelectorAll(`.column-${columnClass}`);
+      elements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
+    }
+
     // Beim Klick auf "Suchen": Eingaben validieren, Filter zurücksetzen, API-Aufruf zum Abrufen von Stationen, Marker setzen, Karte zentrieren, Stationenliste anzeigen
     document.getElementById('search-button').addEventListener('click', function() {
-      if (!validateInputs()) return; // Validierung der erforderlichen Eingaben
-
-      // Stationenanzahl validieren: Wenn leer -> Standard 10, wenn > 10 -> Fehler
+      if (!validateInputs()) return;
       let stationCountInput = document.getElementById('station-count').value;
       let stationCount = stationCountInput ? parseInt(stationCountInput) : 10;
       if (stationCount > 10) {
         alert("Bitte nur maximal 10 eingeben");
         return;
       }
-
-      resetFilters(); // Alle Filter-Checkboxen zurücksetzen (bei Minimal-/Maximalwerten bleiben diese nun checked)
-
+      resetFilters();
       const latitude = document.getElementById('latitude').value;
       const longitude = document.getElementById('longitude').value;
       const radius = document.getElementById('radius-input').value;
-      // Stationenanzahl wird nun als validierter Wert (max. 10) verwendet
       const stationCountParam = stationCount;
-
-      showSpinner(); // Spinner anzeigen, während die Such-API abgefragt wird
+      showSpinner();
       fetch(`/api/search_stations/?latitude=${latitude}&longitude=${longitude}&radius=${radius}&station_count=${stationCountParam}`)
         .then(response => response.json())
         .then(data => {
@@ -520,37 +551,29 @@
             hideSpinner();
             return;
           }
-          // Auch hier stellen wir sicher, dass maximal 10 Stationen angezeigt werden
           allStations = data.stations.slice(0, 10);
           currentPage = 0;
           clearStationMarkers();
-          // Für jede gefundene Station: Marker hinzufügen, Popup mit Stationdaten
           allStations.forEach(station => {
             var marker = L.marker([station.latitude, station.longitude], {icon: blueIcon})
               .bindPopup(`<b>${station.name}</b><br>${station.latitude}, ${station.longitude}`);
             marker.addTo(map);
             stationMarkers.push(marker);
           });
-          // Aktuellen Standortmarker setzen, alte entfernen
           if(currentLocationMarker) { map.removeLayer(currentLocationMarker); }
           currentLocationMarker = L.marker([latitude, longitude], {icon: redIcon})
             .bindPopup("Ihre Position")
             .addTo(map);
-
-          // Suchradius-Kreis auf der Karte anzeigen (Radius in km -> Meter umrechnen)
-          if(searchRadiusCircle) {
-            map.removeLayer(searchRadiusCircle);
-          }
+          if(searchRadiusCircle) { map.removeLayer(searchRadiusCircle); }
           searchRadiusCircle = L.circle([latitude, longitude], {
             radius: parseFloat(radius) * 1000,
             color: 'blue',
             fillColor: 'blue',
             fillOpacity: 0.1
           }).addTo(map);
-
           map.setView([latitude, longitude], 10);
-          displayStationPage(); // Paginierte Stationenliste anzeigen (dies ruft updatePaginationControls() auf)
-          hideSpinner(); // Spinner ausblenden, wenn Suche abgeschlossen ist
+          displayStationPage();
+          hideSpinner();
         })
         .catch(err => {
           console.error(err);
@@ -574,31 +597,6 @@
         displayStationPage();
       }
     });
-
-    // Funktionen für Checkbox-Steuerung:
-    // toggleMinMax: Zeigt oder versteckt die Min/Max-Werte in den Zellen, passt Dotted-Line an
-    function toggleMinMax(type, checkbox) {
-      const minElements = document.querySelectorAll('.data-min');
-      const maxElements = document.querySelectorAll('.data-max');
-      const dottedLines = document.querySelectorAll('.dotted-line');
-      if (type === 'min') {
-        minElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
-      } else if (type === 'max') {
-        maxElements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
-      }
-      dottedLines.forEach(line => {
-        const parentCell = line.closest('td');
-        if (!parentCell) return;
-        const minVisible = parentCell.querySelector('.data-min:not(.hidden)');
-        const maxVisible = parentCell.querySelector('.data-max:not(.hidden)');
-        line.classList.toggle('hidden', !(minVisible && maxVisible));
-      });
-    }
-    // toggleColumn: Zeigt oder versteckt ganze Spalten (z.B. annual, seasonal), basierend auf Checkbox-Status
-    function toggleColumn(columnClass, checkbox) {
-      const elements = document.querySelectorAll(`.column-${columnClass}`);
-      elements.forEach(el => el.classList.toggle('hidden', !checkbox.checked));
-    }
   </script>
 </body>
 </html>
