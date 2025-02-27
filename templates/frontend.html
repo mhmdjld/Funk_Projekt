@@ -33,7 +33,7 @@
     /* Minimalwerte: blau, Maximalwerte: rot */
     .temperature-min { color: blue; }
     .temperature-max { color: red; }
-    /* Dotted-Line, trennt Min/Max in einer Zelle, Breite 50%, Margin */
+    /* Dotted-Line, trennt Min/Max in einer Zelle */
     .dotted-line {
       border-bottom: 1px dotted black;
       width: 50%;
@@ -73,7 +73,7 @@
           </div>
           <div>
             <label for="station-count" class="block text-sm font-medium">Anzahl der Wetterstationen</label>
-            <!-- min und max sind zwar gesetzt, aber zusätzliche Validierung folgt -->
+            <!-- min und max sind gesetzt, aber zusätzliche Validierung folgt -->
             <input id="station-count" type="number" min="1" max="10" placeholder="z.B. 5" class="w-full border rounded-lg p-2">
           </div>
           <div>
@@ -85,7 +85,7 @@
           </div>
         </div>
         <div class="flex justify-center mt-4">
-          <!-- Suchen-Button, startet den Suchvorgang -->
+          <!-- Suchen-Button -->
           <button id="search-button" class="px-6 py-2 bg-blue-500 text-white rounded-lg">Suchen</button>
         </div>
       </div>
@@ -399,7 +399,7 @@
                               </div>`;
         tr.appendChild(tdSpring);
 
-        // Spalte: Sommer, Daten aus seasonal
+        // Spalte: Sommer, Daten aus seasonal, TMAX, TMIN
         var tdSummer = document.createElement('td');
         tdSummer.className = 'border p-2 column-summer';
         var summerTmax = seasonal[year].summer.TMAX !== null ? seasonal[year].summer.TMAX + "°C" : "N/A";
@@ -411,7 +411,7 @@
                               </div>`;
         tr.appendChild(tdSummer);
 
-        // Spalte: Herbst, Daten aus seasonal
+        // Spalte: Herbst, Daten aus seasonal, TMAX, TMIN
         var tdAutumn = document.createElement('td');
         tdAutumn.className = 'border p-2 column-autumn';
         var autumnTmax = seasonal[year].autumn.TMAX !== null ? seasonal[year].autumn.TMAX + "°C" : "N/A";
@@ -423,7 +423,7 @@
                               </div>`;
         tr.appendChild(tdAutumn);
 
-        // Spalte: Winter, Daten aus seasonal
+        // Spalte: Winter, Daten aus seasonal, TMAX, TMIN
         var tdWinter = document.createElement('td');
         tdWinter.className = 'border p-2 column-winter';
         var winterTmax = seasonal[year].winter.TMAX !== null ? seasonal[year].winter.TMAX + "°C" : "N/A";
