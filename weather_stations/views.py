@@ -206,7 +206,7 @@ def get_station_data(request):
                 seasonal[year]["autumn"]["TMAX"] = format(tmax_vals.mean(), '.1f')
             if not tmin_vals.empty:
                 seasonal[year]["autumn"]["TMIN"] = format(tmin_vals.mean(), '.1f')
-        # Winter: Dezember (des Vorjahres) plus Januar und Februar des laufenden Jahres
+        # Winter: Dezember des Vorjahres plus Januar und Februar des laufenden Jahres
         winter = pd.concat([
             data[(data['YEAR'] == year - 1) & (data['MONTH'] == 12)],
             data[(data['YEAR'] == year) & (data['MONTH'].isin([1, 2]))]
