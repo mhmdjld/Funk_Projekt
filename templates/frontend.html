@@ -118,12 +118,12 @@
         <div class="grid grid-cols-4 grid-rows-2 gap-4 mb-4">
           <!-- Maximalwerte -->
           <label class="flex items-center space-x-2">
-            <input type="checkbox" class="rounded" id="filter-minmax-max" onchange="toggleMinMax('max', this)">
+            <input type="checkbox" class="rounded" id="filter-minmax-max" onchange="toggleMinMax('max', this)" checked> <!-- Standardmäßig angekreuzt -->
             <span>Maximalwerte</span>
           </label>
           <!-- Checkbox "Jährlich", steuert Spalte "annual" -->
           <label class="flex items-center space-x-2">
-            <input type="checkbox" class="rounded" id="filter-annual" onchange="toggleColumn('annual', this)">
+            <input type="checkbox" class="rounded" id="filter-annual" onchange="toggleColumn('annual', this)" checked> <!-- Standardmäßig angekreuzt -->
             <span>Jährlich</span>
           </label>
           <!-- Checkbox für Sommer -->
@@ -138,7 +138,7 @@
           </label>
           <!-- Minimalwerte -->
           <label class="flex items-center space-x-2">
-            <input type="checkbox" class="rounded" id="filter-minmax-min" onchange="toggleMinMax('min', this)">
+            <input type="checkbox" class="rounded" id="filter-minmax-min" onchange="toggleMinMax('min', this)" checked> <!-- Standardmäßig angekreuzt -->
             <span>Minimalwerte</span>
           </label>
           <div></div>
@@ -260,8 +260,12 @@
       filterIds.forEach(id => {
         const cb = document.getElementById(id);
         if (cb) {
-          // Setze alle Checkboxen auf false und wende die jeweilige Funktion an
-          cb.checked = false;
+          // Für Minimalwerte, Maximalwerte und Jährlich immer auf true setzen
+          if (id === 'filter-annual' || id === 'filter-minmax-max' || id === 'filter-minmax-min') {
+            cb.checked = true;
+          } else {
+            cb.checked = false;
+          }
           if (id.startsWith('filter-minmax')) {
             toggleMinMax(id.endsWith('max') ? 'max' : 'min', cb);
           } else {
@@ -531,6 +535,7 @@
     // Beim Klick auf "Suchen": Eingaben validieren, Filter zurücksetzen, API-Aufruf zum Abrufen von Stationen, Marker setzen, Karte zentrieren, Stationenliste anzeigen
     document.getElementById('search-button').addEventListener('click', function() {
       if (!validateInputs()) return;
+      document.getElementById('data-table-body').innerHTML = ''; // Tabelle leeren, bis neue Station ausgewählt wird
       let stationCountInput = document.getElementById('station-count').value;
       let stationCount = stationCountInput ? parseInt(stationCountInput) : 10;
       if (stationCount > 10) {
