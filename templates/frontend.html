@@ -546,6 +546,20 @@
       const latitude = document.getElementById('latitude').value;
       const longitude = document.getElementById('longitude').value;
       const radius = document.getElementById('radius-input').value;
+
+      // Überprüfe, ob Breite negativ ist (Südhalbkugel) und tausche die Tabellenbeschriftungen
+      if (parseFloat(latitude) < 0) {
+        document.querySelector('.column-spring').innerText = "Herbst"; // Frühling -> Herbst
+        document.querySelector('.column-summer').innerText = "Winter";   // Sommer -> Winter
+        document.querySelector('.column-autumn').innerText = "Frühling";  // Herbst -> Frühling
+        document.querySelector('.column-winter').innerText = "Sommer";    // Winter -> Sommer
+      } else {
+        document.querySelector('.column-spring').innerText = "Frühling";  // Standardbeschriftung für Nordhalbkugel
+        document.querySelector('.column-summer').innerText = "Sommer";    // Standardbeschriftung für Nordhalbkugel
+        document.querySelector('.column-autumn').innerText = "Herbst";    // Standardbeschriftung für Nordhalbkugel
+        document.querySelector('.column-winter').innerText = "Winter";    // Standardbeschriftung für Nordhalbkugel
+      }
+
       const stationCountParam = stationCount;
       showSpinner();
       fetch(`/api/search_stations/?latitude=${latitude}&longitude=${longitude}&radius=${radius}&station_count=${stationCountParam}`)
