@@ -37,6 +37,7 @@ def search_stations(request):
       - longitude (Länge, float)
       - radius (Suchradius in km, Standard: 10 km)
       - station_count (Anzahl der Wetterstationen)
+      - start_year (nur Stationen anzeigen, die seit diesem Jahr existieren)
     """
     try:
         lat = float(request.GET.get('latitude'))
@@ -48,12 +49,14 @@ def search_stations(request):
             station_count = None  # Kein Wert
         else:
             station_count = int(station_count_str)
+        start_year = int(request.GET.get('start_year'))
     except (TypeError, ValueError):
         return HttpResponseBadRequest("Ungültige Parameter.")
     # Falls station_count nicht angegeben wurde, eine leere Liste zurückgeben:
     if station_count is None:
         return JsonResponse({"stations": []})
 
+    # Stationendaten abrufen
     stations_url = "https://noaa-ghcn-pds.s3.amazonaws.com/ghcnd-stations.txt"
     try:
         response = requests.get(stations_url)
@@ -63,6 +66,36 @@ def search_stations(request):
     except Exception as e:
         return HttpResponseBadRequest("Fehler beim Abrufen der Stationendaten: " + str(e))
 
+    # Inventory Daten laden, um Stationen nach erstem vorhandenen Jahr zu filtern
+    try:
+        inventory_url = "https://noaa-ghcn-pds.s3.amazonaws.com/ghcnd-inventory.txt"
+        inv_response = requests.get(inventory_url)
+        if inv_response.status_code != 200:
+            return HttpResponseBadRequest("Fehler beim Abrufen der Inventardaten.")
+        inventory_data = inv_response.text.splitlines()
+    except Exception as e:
+        return HttpResponseBadRequest("Fehler beim Abrufen der Inventardaten: " + str(e))
+
+    # Baue ein Dictionary: station_id -> earliest_year
+    inventory = {}
+    for line in inventory_data:
+        parts = line.split()
+        if len(parts) < 6:
+            continue
+        inv_station_id = parts[0]
+        try:
+            inv_first_year = int(parts[4])  # Das ist das erste Jahr, in dem diese Station Messwerte hatte
+        except ValueError:
+            continue
+
+        # Wenn es noch keinen Eintrag gibt, übernehmen
+        if inv_station_id not in inventory:
+            inventory[inv_station_id] = inv_first_year
+        else:
+            # Falls schon ein Jahr existiert, nimm das früheste
+            inventory[inv_station_id] = min(inventory[inv_station_id], inv_first_year)
+
+    # Finde Stationen im Umkreis
     matching_stations = []
     # Fixed-Width-Parsing: ID [0:11], Latitude [12:20], Longitude [21:30], Name [41:71]
     for line in station_data:
@@ -84,9 +117,17 @@ def search_stations(request):
                 "longitude": station_lon,
                 "distance": round(distance, 2)
             })
-    matching_stations.sort(key=lambda x: x["distance"])
-    matching_stations = matching_stations[:station_count]
-    return JsonResponse({"stations": matching_stations})
+
+    # Station muss laut Inventar vor (oder in) start_year Daten gehabt haben
+    filtered_stations = []
+    for station in matching_stations:
+        earliest_year = inventory.get(station["id"])
+        if earliest_year is not None and earliest_year <= start_year:
+            filtered_stations.append(station)
+
+    filtered_stations.sort(key=lambda x: x["distance"])
+    filtered_stations = filtered_stations[:station_count]
+    return JsonResponse({"stations": filtered_stations})
 
 
 def get_station_data(request):
