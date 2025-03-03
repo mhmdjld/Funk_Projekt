@@ -184,6 +184,12 @@
 
   <!-- JavaScript: API-Aufrufe, Marker, Pagination, Filter-Reset, Validierung, Marker-Icons, Loading Spinner -->
   <script>
+    // Maximum Endjahr: aktuelles Jahr - 1
+    document.addEventListener('DOMContentLoaded', function(){
+      var currentYear = new Date().getFullYear();
+      document.getElementById('end-year').max = currentYear - 1;
+    });
+
     // Globaler Flag
     var isResettingFilters = false;
 
@@ -312,6 +318,11 @@
       }
       if (isNaN(endYear) || endYear < startYear) {
         alert("Endjahr muss größer oder gleich dem Startjahr sein.");
+        return false;
+      }
+      var maxAllowedYear = new Date().getFullYear() - 1;
+      if (endYear > maxAllowedYear) {
+        alert("Das Endjahr darf maximal " + maxAllowedYear + " sein.");
         return false;
       }
       // Station Count validieren (muss zwischen 1 und 10 liegen)
