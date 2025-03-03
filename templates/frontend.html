@@ -202,8 +202,11 @@
       radiusInput.value = radiusSlider.value;
     });
     radiusInput.addEventListener('input', () => {
-      if (radiusInput.value >= radiusSlider.min && radiusInput.value <= radiusSlider.max) {
-        radiusSlider.value = radiusInput.value;
+      const inputVal = parseFloat(radiusInput.value);
+      const minVal = parseFloat(radiusSlider.min);
+      const maxVal = parseFloat(radiusSlider.max);
+      if (inputVal >= minVal && inputVal <= maxVal) {
+        radiusSlider.value = inputVal;
       }
     });
 
