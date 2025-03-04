@@ -561,6 +561,7 @@
       const longitude = document.getElementById('longitude').value;
       const radius = document.getElementById('radius-input').value;
       const startYear = document.getElementById('start-year').value;
+      const endYear = document.getElementById('end-year').value;
 
       // Überprüfe, ob Breite negativ ist (Südhalbkugel) und tausche die Tabellenbeschriftungen
       if (parseFloat(latitude) < 0) {
@@ -577,11 +578,11 @@
 
       const stationCountParam = stationCount;
       showSpinner();
-      fetch(`/api/search_stations/?latitude=${latitude}&longitude=${longitude}&radius=${radius}&station_count=${stationCountParam}&start_year=${startYear}`)
+      fetch(`/api/search_stations/?latitude=${latitude}&longitude=${longitude}&radius=${radius}&station_count=${stationCountParam}&start_year=${startYear}&end_year=${endYear}`)
         .then(response => response.json())
         .then(data => {
           if(data.stations.length === 0) {
-            alert("Keine Wetterstationen im angegebenen Umkreis gefunden oder keine Stationen, die seit dem angegebenen Startjahr vorhanden sind. Bitte ändern Sie Ihre Eingaben.");
+            alert("Keine Wetterstationen im angegebenen Umkreis gefunden oder keine Stationen, die im angegebenen Zeitraum Messdaten haben. Bitte ändern Sie Ihre Eingaben.");
             hideSpinner();
             return;
           }

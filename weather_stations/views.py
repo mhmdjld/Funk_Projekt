@@ -38,6 +38,7 @@ def search_stations(request):
       - radius (Suchradius in km, Standard: 10 km)
       - station_count (Anzahl der Wetterstationen)
       - start_year (nur Stationen anzeigen, die seit diesem Jahr existieren)
+      - end_year (Stationen müssen bis dieses Jahres Daten haben)
     """
     try:
         lat = float(request.GET.get('latitude'))
@@ -50,6 +51,7 @@ def search_stations(request):
         else:
             station_count = int(station_count_str)
         start_year = int(request.GET.get('start_year'))
+        end_year = int(request.GET.get('end_year'))
     except (TypeError, ValueError):
         return HttpResponseBadRequest("Ungültige Parameter.")
     # Falls station_count nicht angegeben wurde, eine leere Liste zurückgeben:
@@ -66,7 +68,7 @@ def search_stations(request):
     except Exception as e:
         return HttpResponseBadRequest("Fehler beim Abrufen der Stationendaten: " + str(e))
 
-    # Inventory Daten laden, um Stationen nach erstem vorhandenen Jahr zu filtern
+    # Inventory Daten laden und filtern
     try:
         inventory_url = "https://noaa-ghcn-pds.s3.amazonaws.com/ghcnd-inventory.txt"
         inv_response = requests.get(inventory_url)
@@ -76,24 +78,31 @@ def search_stations(request):
     except Exception as e:
         return HttpResponseBadRequest("Fehler beim Abrufen der Inventardaten: " + str(e))
 
-    # Baue ein Dictionary: station_id -> earliest_year
+    # Baue ein Dictionary: station_id -> { "TMAX": (first_year, last_year), "TMIN": (first_year, last_year) }
     inventory = {}
     for line in inventory_data:
         parts = line.split()
         if len(parts) < 6:
             continue
-        inv_station_id = parts[0]
+        station_id = parts[0]
+        element = parts[3]
+        # Nur TMAX und TMIN berücksichtigen
+        if element not in ["TMAX", "TMIN"]:
+            continue
         try:
-            inv_first_year = int(parts[4])  # Das ist das erste Jahr, in dem diese Station Messwerte hatte
+            first_year = int(parts[4])  # Erstes Jahr, in dem diese Messgröße vorliegt
+            last_year = int(parts[5])   # Letztes Jahr, in dem diese Messgröße vorliegt
         except ValueError:
             continue
-
-        # Wenn es noch keinen Eintrag gibt, übernehmen
-        if inv_station_id not in inventory:
-            inventory[inv_station_id] = inv_first_year
+        if station_id not in inventory:
+            inventory[station_id] = {}
+        if element in inventory[station_id]:
+            # Falls mehrere Einträge vorhanden sind, nehme den frühesten first_year und den spätesten last_year
+            prev_first, prev_last = inventory[station_id][element]
+            inventory[station_id][element] = (min(prev_first, first_year), max(prev_last, last_year))
         else:
-            # Falls schon ein Jahr existiert, nimm das früheste
-            inventory[inv_station_id] = min(inventory[inv_station_id], inv_first_year)
+            inventory[station_id][element] = (first_year, last_year)
+
 
     # Finde Stationen im Umkreis
     matching_stations = []
@@ -118,12 +127,18 @@ def search_stations(request):
                 "distance": round(distance, 2)
             })
 
-    # Station muss laut Inventar vor (oder in) start_year Daten gehabt haben
+    # Station muss laut Inventor daten beide Messgrößen TMAX und TMIN haben und
+    # der verfügbare Zeitraum muss den gesamten Zeitraum von start_year bis end_year abdecken
     filtered_stations = []
     for station in matching_stations:
-        earliest_year = inventory.get(station["id"])
-        if earliest_year is not None and earliest_year <= start_year:
-            filtered_stations.append(station)
+        inv_data = inventory.get(station["id"])
+        if inv_data and "TMAX" in inv_data and "TMIN" in inv_data:
+            tmax_first, tmax_last = inv_data["TMAX"]
+            tmin_first, tmin_last = inv_data["TMIN"]
+            effective_start = max(tmax_first, tmin_first)
+            effective_end = min(tmax_last, tmin_last)
+            if effective_start <= start_year and effective_end >= end_year:
+                filtered_stations.append(station)
 
     filtered_stations.sort(key=lambda x: x["distance"])
     filtered_stations = filtered_stations[:station_count]
