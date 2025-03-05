@@ -3,7 +3,7 @@ import gzip
 
 def get_temperature(station_id, year, temp_type):
     # Pfad zur Datei 
-    file_path = f"/Users/laura/Documents/stations/{station_id}.csv.gz"
+    file_path = f"/Users/robin/Documents/stations/{station_id}.csv.gz"
     
     try:
         # Datei entpacken und einlesen
