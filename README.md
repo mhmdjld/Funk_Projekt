@@ -5,7 +5,7 @@ Bevor Sie starten, stellen Sie bitte sicher, dass die folgenden Programme auf Ih
 
 ### Docker installieren
 - Docker Desktop für Windows herunterladen: [Docker Download](https://www.docker.com/get-started)
-- Nach der Installation: Stellen Sie sicher, dass Docker läuft und überprüfen Sie die Version:
+- Nach der Installation: Überprüfen Sie die Version:
   ```sh
   docker --version
   ```
