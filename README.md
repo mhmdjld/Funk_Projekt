@@ -32,7 +32,7 @@ http://localhost:8000/
 
 ---
 
-## Schritt 4: Container verwalten (Container stoppen / Container neu starten:)
+## Schritt 4: Container verwalten (Container stoppen / Container neu starten)
 Um den Betrieb der Anwendung flexibel zu steuern, können Sie den Docker-Container jederzeit stoppen oder neu starten. Dies ist besonders nützlich, wenn Änderungen vorgenommen wurden oder die Anwendung vorübergehend nicht benötigt wird
 - Container Stoppen:
 ```sh
