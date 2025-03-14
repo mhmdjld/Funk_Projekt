@@ -28,7 +28,7 @@ docker run -d -p 127.0.0.1:8000:8000 --name funk_projekt_container ghcr.io/mhmdj
 ## Schritt 3: Anwendung im Browser öffnen
 Nach dem erfolgreichen Start des Containers können Sie die Anwendung über folgende Adresse im Browser aufrufen:
 
-http://localhost:8000/
+http://127.0.0.1:8000/
 
 ---
 
