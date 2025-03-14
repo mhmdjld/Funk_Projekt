@@ -21,7 +21,7 @@ docker pull ghcr.io/mhmdjld/funk_projekt:latest
 ```
 - Container starten:
 ```sh
-docker run -d -p 8000:8000 --name funk_projekt_container ghcr.io/mhmdjld/funk_projekt:latest
+docker run -d -p 127.0.0.1:8000:8000 --name funk_projekt_container ghcr.io/mhmdjld/funk_projekt:latest
 ```
 ---
 
