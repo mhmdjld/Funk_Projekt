@@ -8,13 +8,12 @@ import gzip
 from io import BytesIO
 from unittest.mock import patch, MagicMock
 import json
-
-# Django initialisieren, damit HttpRequest etc. funktionieren
 if not settings.configured:
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "weather_stations.settings")
     django.setup()
-
-from weather_stations.views import index, haversine, search_stations, get_station_data  # Importiere die Funktionen aus deiner views.py
+    
+# Importiere die Funktionen aus views.py
+from weather_stations.views import index, haversine, search_stations, get_station_data  
 
 class ViewsTestCase(unittest.TestCase):
     """
